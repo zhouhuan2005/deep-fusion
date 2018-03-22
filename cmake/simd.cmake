@@ -1,4 +1,5 @@
-# This file is part of the JITLIB distribution (https://github.com/tensor-tang).
+#===============================================================================
+# This file is part of the JITInfer (https://github.com/tensor-tangi/jitinfer).
 # Copyright (c) 2018 Tensor Tang.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -12,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+#===============================================================================
 
 # This file is use to check VNNI support and all other level of AVX on your machine
 

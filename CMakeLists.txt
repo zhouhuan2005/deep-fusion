@@ -1,4 +1,5 @@
-# This file is part of the JITLIB distribution (https://github.com/tensor-tang).
+#===============================================================================
+# This file is part of the JITInfer (https://github.com/tensor-tangi/jitinfer).
 # Copyright (c) 2018 Tensor Tang.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -12,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+#===============================================================================
 
 cmake_minimum_required(VERSION 3.5)
 
@@ -26,14 +28,16 @@ if(NOT CMAKE_BUILD_TYPE)
       FORCE)
 endif()
 
-set(PROJECT_NAME "JitLib")
+set(PROJECT_NAME "JITInfer")
 set(PROJECT_VERSION "0.1")
-set(LIB_NAME jitlib)
+set(LIB_NAME jitinfer)
 set(PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(THIRD_PARTY_PATH "${CMAKE_BINARY_DIR}/third_party" CACHE STRING
   "A path setting third party libraries download & build directories.")
+set(THIRD_PARTY_INSTALL_PATH "${THIRD_PARTY_PATH}/install" CACHE STRING
+  "A path setting third party libraries install directories.")
 set(THIRD_PARTY_BUILD_TYPE Release)
 
 project(${PROJECT_NAME} C CXX)
@@ -47,8 +51,8 @@ option(WITH_GTEST         "Compile with gtest"                                 O
 option(WITH_VERBOSE       "Compile with VERBOSE for profiling"                 ON)
 
 ########################################################################################
-include(system)                # gcc flags
-include(simd)                # used to check if is supported AVX512
+include(system)              # gcc flags
+include(simd)                # check if AVX512 or VNNI is supported
 include(external/mklml)      # download mklml package and use iomp
 include(external/xbyak)      # download xbyak
 include(external/gtest)      # download, build, install gtest
@@ -71,3 +75,5 @@ set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3 -O0" CACHE STRING "Disable optimize when debug
 set(CMAKE_C_FLAGS_DEBUG "-ggdb3 -O0"  CACHE STRING "Disable optimize when debug")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
+
+install(FILES LICENSE DESTINATION share/doc/${LIB_NAME})

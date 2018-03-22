@@ -1,5 +1,5 @@
-# JIT(Just-In-Time) library
-JIT library
+# JIT(Just-In-Time) Inference library
+JIT Inference library
 
 ## How to contribute
 1. `pip install pre-commit`, about pre-commit check [here](http://pre-commit.com/#plugins).
