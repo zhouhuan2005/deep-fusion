@@ -18,14 +18,9 @@ if(NOT ${WITH_GTEST})
   return()
 endif()
 
-set(GTEST_INSTALL_DIR ${THIRD_PARTY_INSTALL_PATH}/gtest)
-if(EXISTS ${GTEST_INSTALL_DIR})
-  return()
-endif()
-
 enable_testing()
 include(ExternalProject)
-
+set(GTEST_INSTALL_DIR ${THIRD_PARTY_INSTALL_PATH}/gtest)
 set(GTEST_SOURCES_DIR ${THIRD_PARTY_PATH}/gtest)
 set(GTEST_INCLUDE_DIR "${GTEST_INSTALL_DIR}/include" CACHE PATH "gtest include directory." FORCE)
 

@@ -15,11 +15,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
-set(MKLML_INSTALL_ROOT   ${THIRD_PARTY_INSTALL_PATH}/mklml)
-if(EXISTS ${MKLML_INSTALL_ROOT})
-  return()
-endif()
-
 # download mklml package is only for iomp so far
 include(ExternalProject)
 set(MKLML_PROJECT       "extern_mklml")
@@ -28,6 +23,7 @@ set(MKLML_URL           "https://github.com/01org/mkl-dnn/releases/download/v0.1
 set(MKLML_SOURCE_DIR    "${THIRD_PARTY_PATH}/mklml")
 set(MKLML_DOWNLOAD_DIR  "${MKLML_SOURCE_DIR}/src/${MKLML_PROJECT}")
 set(MKLML_DST_DIR       "mklml")
+set(MKLML_INSTALL_ROOT   ${THIRD_PARTY_INSTALL_PATH}/mklml)
 set(MKLML_ROOT          ${MKLML_INSTALL_ROOT}/${MKLML_VER})
 set(MKLML_INC_DIR       ${MKLML_ROOT}/include)
 set(MKLML_LIB_DIR       ${MKLML_ROOT}/lib)

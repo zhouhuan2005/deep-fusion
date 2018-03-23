@@ -15,15 +15,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
-set(XBYAK_INSTALL_ROOT  ${THIRD_PARTY_INSTALL_PATH}/xbyak)
-if(EXISTS ${XBYAK_INSTALL_ROOT})
-  return()
-endif()
-
 include(ExternalProject)
 
 set(XBYAK_PROJECT       extern_xbyak)
 set(XBYAK_PREFIX_DIR    ${THIRD_PARTY_PATH}/xbyak)
+set(XBYAK_INSTALL_ROOT  ${THIRD_PARTY_INSTALL_PATH}/xbyak)
 set(XBYAK_INC_DIR       ${XBYAK_INSTALL_ROOT}/include)
 
 include_directories(${XBYAK_INC_DIR})

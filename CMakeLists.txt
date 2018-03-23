@@ -49,6 +49,7 @@ message(STATUS "C compiler: ${CMAKE_C_COMPILER}, version: "
 option(WITH_VNNI          "Compile with AVX512 VNNI support"        ${VNNI_FOUND})
 option(WITH_GTEST         "Compile with gtest"                                 ON)
 option(WITH_VERBOSE       "Compile with VERBOSE for profiling"                 ON)
+option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)  # TODO: acutally enable it
 
 ########################################################################################
 include(system)              # gcc flags
@@ -66,10 +67,20 @@ if(WITH_VERBOSE)
   add_definitions(-DWITH_VERBOSE)
 endif()
 
+if(WITH_GLOG)
+  add_definitions(-DWITH_GLOG)
+endif()
+
+set(EXTERNAL_LIBS
+    ${MKLML_IOMP_LIB}
+    gtest
+    gtest_main
+)
+include_directories("${PROJECT_SOURCE_DIR}")
+include_directories(include)
+
 add_subdirectory(src)
 add_subdirectory(test)
-
-include_directories("${PROJECT_SOURCE_DIR}")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3 -O0" CACHE STRING "Disable optimize when debug")
 set(CMAKE_C_FLAGS_DEBUG "-ggdb3 -O0"  CACHE STRING "Disable optimize when debug")

@@ -13,6 +13,7 @@ if(WITH_VNNI)
 endif()
 
 # external dependencies log output
+set(external_project_dependencies)
 set(EXTERNAL_PROJECT_LOG_ARGS
     LOG_DOWNLOAD    0     # Wrap download in script to log output
     LOG_UPDATE      1     # Wrap update in script to log output
