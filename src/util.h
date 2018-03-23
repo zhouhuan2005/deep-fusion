@@ -22,6 +22,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#ifdef WIN32
+#include <malloc.h>
+#include <windows.h>
+#endif
 
 namespace jitinfer {
 
@@ -40,26 +45,9 @@ private:                                            \
   classname &operator=(const classname &&) = delete
 #endif
 
-void *malloc(size_t size, int alignment) {
-  void *ptr;
+void *malloc(size_t size, int alignment = 64);
 
-#ifdef _WIN32
-  ptr = _aligned_malloc(size, alignment);
-  int rc = ptr ? 0 : -1;
-#else
-  int rc = ::posix_memalign(&ptr, alignment, size);
-#endif
-
-  return (rc == 0) ? ptr : 0;
-}
-
-void free(void *p) {
-#ifdef _WIN32
-  _aligned_free(p);
-#else
-  ::free(p);
-#endif
-}
+void free(void *p);
 
 template <typename T, typename P>
 inline bool one_of(T val, P item) {
@@ -70,7 +58,7 @@ inline bool one_of(T val, P item, Args... item_others) {
   return val == item || one_of(val, item_others...);
 }
 
-// TODO: getenv, dump jit bin
-
-// TODO: add glog?
+// TODO: optimize jit dump code and getenv
+int _getenv(char *value, const char *name, int length);
+bool jit_dump_code();
 }

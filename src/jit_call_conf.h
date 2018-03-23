@@ -15,9 +15,27 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include "concat_op.h"
+#pragma once
+
+#include <stdint.h>
 
 namespace jitinfer {
+namespace jit {
+struct jit_concat_call_s {
+  const void **src;
+  const int *nb_ic;
+  const void *dst;
+};
 
-void concatOp::infer() { ; }
+struct jit_concat_conf_t {
+  int bs;
+  int h, w;
+  int oc;
+  int n_inputs;
+  // data_type_t dtype;
+  int typesize;
+  int block;  // u8: 64, s32: 16
+  bool with_relu;
+};
+}
 }
