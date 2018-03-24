@@ -14,31 +14,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-
-#pragma once
-
-#include "base_op.h"
-#include "jit_concat_kernel.h"
+#include "jitinfer.h"
+#include "jitinfer_common.h"
+#include "util.h"
 
 namespace jitinfer {
 
-struct concatOp : public op {
-public:
-  explicit concatOp(bool post_relu) : op() {
-    kernel_ = new jit::jit_concat_kernel(/*jcp*/);
-    // acc memory
-  }
+memory::memory(const nchw_dims& dm,
+               const format fmt,
+               const dtype dt,
+               int alignment)
+    : fmt_(fmt), dt_(dt) {
+  dims_ = nchw2format(dm, fmt);
+  allocate_buffer(alignment);
+}
 
-  ~concatOp() { delete kernel_; }
+memory::~memory() { free(data_); }
 
-private:
-  void infer() override;
-  // pd_t conf_;
-  jit::jit_concat_kernel *kernel_;
+void memory::allocate_buffer(int alignment) {
+  assert(buffer_size() > 0);
+  data_ = malloc(buffer_size(), alignment);
+  assert(data_ != NULL);
+}
 
-  // const data_t **src_;
-  // const data_t **src_with_offset_;
-  // int *ic_;
-  // int *nb_ic_;
-};
+size_t memory::size() {
+  return util::array_product<int>(dims_.data(), dims_.size());
+}
+
+size_t memory::buffer_size() { return size() * dtype_size(dt_); }
+
+void op::execute() {
+  // TODO: add timer
+  infer();
+}
 }

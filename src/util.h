@@ -30,22 +30,19 @@
 
 namespace jitinfer {
 
-typedef float f32;
-typedef int32_t s32;
-typedef int8_t s8;
-typedef uint8_t u8;
+namespace util {
+// TODO: use forward template
+template <typename T>
+size_t array_product(const T *p, size_t num) {
+  size_t out = 1;
+  for (size_t i = 0; i < num; ++i) {
+    out *= size_t(p[i]);
+  }
+  return out;
+}
+}
 
-// Disable the copy and assignment operator for a class.
-#ifndef DISABLE_COPY_AND_ASSIGN
-#define DISABLE_COPY_AND_ASSIGN(classname)          \
-private:                                            \
-  classname(const classname &) = delete;            \
-  classname(const classname &&) = delete;           \
-  classname &operator=(const classname &) = delete; \
-  classname &operator=(const classname &&) = delete
-#endif
-
-void *malloc(size_t size, int alignment = 64);
+void *malloc(size_t size, int alignment);
 
 void free(void *p);
 

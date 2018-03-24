@@ -15,9 +15,30 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include "concat_op.h"
+#pragma once
+
+#include <jitinfer.h>
+#include "jit_concat_kernel.h"
 
 namespace jitinfer {
 
-void concatOp::infer() { ; }
+class op_concat : public op {
+public:
+  explicit op_concat(bool post_relu) : op() {
+    kernel_ = new jit::jit_concat_kernel(/*jcp*/);
+    // acc memory
+  }
+
+  ~op_concat() { delete kernel_; }
+
+private:
+  void infer() override;
+  // pd_t conf_;
+  jit::jit_concat_kernel *kernel_;
+
+  // const data_t **src_;
+  // const data_t **src_with_offset_;
+  // int *ic_;
+  // int *nb_ic_;
+};
 }

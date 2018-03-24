@@ -17,10 +17,78 @@
 #pragma once
 
 #include <stdlib.h>
+#include <array>
+#include <memory>
+#include <vector>
 
 namespace jitinfer {
 
-// std::unique_ptr<void> concat(const std::vector<memory>& srcs, memory dst) {
-//  return std::unique_ptr<new concatOp(srcs, dst)>;
-//}
+// Disable the copy and assignment operator for a class.
+#ifndef DISABLE_COPY_AND_ASSIGN
+#define DISABLE_COPY_AND_ASSIGN(classname)          \
+private:                                            \
+  classname(const classname &) = delete;            \
+  classname(const classname &&) = delete;           \
+  classname &operator=(const classname &) = delete; \
+  classname &operator=(const classname &&) = delete
+#endif
+
+struct opdesc {
+  int tmp;
+};
+
+struct memory {
+public:
+  enum format {
+    format_undef = 0,
+    x,
+    nchw,
+    nhwc,
+  };
+  typedef std::vector<int> dims;
+  typedef std::array<int, 4> nchw_dims;
+
+  enum dtype {
+    f32 = 0,
+    s32,
+    s8,
+    u8,
+  };
+
+  // TODO: enable more format init
+  // explicit memory(const dims& dm, const format fmt, const dtype dt, int
+  // alignment = 64);
+  explicit memory(const nchw_dims &dm,
+                  const format fmt,
+                  const dtype dt,
+                  int alignment = 64);
+  ~memory();
+  size_t size();
+  size_t buffer_size();
+  dims actual_dims() { return dims_; }
+  void *data() { return data_; }
+
+private:
+  void allocate_buffer(int alignment);
+  void *data_;
+  dims dims_;
+  format fmt_;
+  dtype dt_;
+
+  DISABLE_COPY_AND_ASSIGN(memory);
+};
+
+class op {
+public:
+  explicit op() {}
+  virtual void execute();
+
+protected:
+  virtual void infer() = 0;
+  DISABLE_COPY_AND_ASSIGN(op);
+};
+
+std::unique_ptr<op> concat(const std::vector<memory> &srcs,
+                           memory dst,
+                           bool post_relu = false);
 }

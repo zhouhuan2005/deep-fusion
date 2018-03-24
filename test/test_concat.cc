@@ -16,15 +16,18 @@
  ******************************************************************************/
 
 #include "gtest/gtest.h"
-
-#include "jitinfer.h"
+#include "src/jitinfer_common.h"
 #include "src/util.h"
 
 namespace jitinfer {
 
+using memory = jitinfer::memory;
+using format = jitinfer::memory::format;
+
 struct test_concat_params {
-  // TODO: dims
-  int tmp;
+  memory::format fmt;
+  std::vector<memory::nchw_dims> srcs_dims;
+  memory::nchw_dims dst_dims;
 };
 
 template <typename dtype>
@@ -33,7 +36,14 @@ protected:
   virtual void SetUp() {
     test_concat_params p =
         ::testing::TestWithParam<test_concat_params>::GetParam();
-    ASSERT_TRUE(p.tmp == 1);
+    auto dt = data_traits<dtype>::dtype;
+    std::vector<std::unique_ptr<memory>> srcs(p.srcs_dims.size());
+    for (size_t i = 0; i < p.srcs_dims.size(); ++i) {
+      srcs[i].reset(new memory(p.srcs_dims[i], p.fmt, dt));
+    }
+
+    std::unique_ptr<memory> dst;
+    dst.reset(new memory(p.dst_dims, p.fmt, dt));
   }
 };
 
@@ -47,19 +57,45 @@ TEST_P(test_concat_s32, TestsConcat) {}
 TEST_P(test_concat_s8, TestsConcat) {}
 TEST_P(test_concat_u8, TestsConcat) {}
 
-INSTANTIATE_TEST_CASE_P(TestConcat,
-                        test_concat_f32,
-                        ::testing::Values(test_concat_params{1}));
+// @note: the srcs and dst are always given as nchw
 
-INSTANTIATE_TEST_CASE_P(TestConcat,
-                        test_concat_s32,
-                        ::testing::Values(test_concat_params{1}));
+INSTANTIATE_TEST_CASE_P(
+    TestConcat,
+    test_concat_f32,
+    ::testing::Values(test_concat_params{format::nhwc,
+                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
+                                         {2, 160, 1, 1}},
+                      test_concat_params{format::nhwc,
+                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
+                                         {2, 160, 1, 1}}));
 
-INSTANTIATE_TEST_CASE_P(TestConcat,
-                        test_concat_s8,
-                        ::testing::Values(test_concat_params{1}));
+INSTANTIATE_TEST_CASE_P(
+    TestConcat,
+    test_concat_s32,
+    ::testing::Values(test_concat_params{format::nhwc,
+                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
+                                         {2, 160, 1, 1}},
+                      test_concat_params{format::nhwc,
+                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
+                                         {2, 160, 1, 1}}));
 
-INSTANTIATE_TEST_CASE_P(TestConcat,
-                        test_concat_u8,
-                        ::testing::Values(test_concat_params{1}));
+INSTANTIATE_TEST_CASE_P(
+    TestConcat,
+    test_concat_s8,
+    ::testing::Values(
+
+        test_concat_params{
+            format::nhwc, {{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
+        test_concat_params{
+            format::nhwc, {{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}}));
+
+INSTANTIATE_TEST_CASE_P(
+    TestConcat,
+    test_concat_u8,
+    ::testing::Values(test_concat_params{format::nhwc,
+                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
+                                         {2, 160, 1, 1}},
+                      test_concat_params{format::nhwc,
+                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
+                                         {2, 160, 1, 1}}));
 }

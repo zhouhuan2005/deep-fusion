@@ -14,27 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-#pragma once
 
-#include "util.h"
+#include "op_concat.h"
 
 namespace jitinfer {
 
-struct opdesc {
-  int tmp;
-};
-
-class op {
-public:
-  explicit op() {}
-
-  ~op() {}
-
-  virtual void infer() = 0;
-  virtual void execute() {
-    // TODO: add timer
-    infer();
-  }
-  DISABLE_COPY_AND_ASSIGN(op);
-};
+void op_concat::infer() { ; }
 }
