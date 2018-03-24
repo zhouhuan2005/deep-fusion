@@ -16,6 +16,7 @@
  ******************************************************************************/
 
 #include "gtest/gtest.h"
+#include "jitinfer.h"
 #include "src/jitinfer_common.h"
 #include "src/util.h"
 
@@ -38,12 +39,16 @@ protected:
         ::testing::TestWithParam<test_concat_params>::GetParam();
     auto dt = data_traits<dtype>::dtype;
     std::vector<std::unique_ptr<memory>> srcs(p.srcs_dims.size());
+    std::unique_ptr<memory> dst;
     for (size_t i = 0; i < p.srcs_dims.size(); ++i) {
       srcs[i].reset(new memory(p.srcs_dims[i], p.fmt, dt));
+      // fill_data(srcs[i]->data(), srcs[i]->buffer_size());
     }
-
-    std::unique_ptr<memory> dst;
     dst.reset(new memory(p.dst_dims, p.fmt, dt));
+    // fill_data(dst->data(), dst->buffer_size());
+
+    auto c = concat(srcs, dst);
+    c->submit();
   }
 };
 
@@ -82,12 +87,12 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     TestConcat,
     test_concat_s8,
-    ::testing::Values(
-
-        test_concat_params{
-            format::nhwc, {{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
-        test_concat_params{
-            format::nhwc, {{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}}));
+    ::testing::Values(test_concat_params{format::nhwc,
+                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
+                                         {2, 160, 1, 1}},
+                      test_concat_params{format::nhwc,
+                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
+                                         {2, 160, 1, 1}}));
 
 INSTANTIATE_TEST_CASE_P(
     TestConcat,

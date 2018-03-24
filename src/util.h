@@ -31,20 +31,15 @@
 namespace jitinfer {
 
 namespace util {
-// TODO: use forward template
+
 template <typename T>
-size_t array_product(const T *p, size_t num) {
+inline size_t array_product(const T *p, size_t num) {
   size_t out = 1;
   for (size_t i = 0; i < num; ++i) {
     out *= size_t(p[i]);
   }
   return out;
 }
-}
-
-void *malloc(size_t size, int alignment);
-
-void free(void *p);
 
 template <typename T, typename P>
 inline bool one_of(T val, P item) {
@@ -54,6 +49,11 @@ template <typename T, typename P, typename... Args>
 inline bool one_of(T val, P item, Args... item_others) {
   return val == item || one_of(val, item_others...);
 }
+}
+
+void *malloc(size_t size, int alignment);
+
+void free(void *p);
 
 // TODO: optimize jit dump code and getenv
 int _getenv(char *value, const char *name, int length);

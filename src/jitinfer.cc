@@ -18,6 +18,8 @@
 #include "jitinfer_common.h"
 #include "util.h"
 
+#include "op_concat.h"
+
 namespace jitinfer {
 
 memory::memory(const nchw_dims& dm,
@@ -43,8 +45,14 @@ size_t memory::size() {
 
 size_t memory::buffer_size() { return size() * dtype_size(dt_); }
 
-void op::execute() {
+void op::submit() {
   // TODO: add timer
   infer();
+}
+std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>>& srcs,
+                           std::unique_ptr<memory>& dst,
+                           bool post_relu) {
+  std::unique_ptr<op> c(new op_concat(post_relu));
+  return c;
 }
 }

@@ -81,14 +81,14 @@ private:
 class op {
 public:
   explicit op() {}
-  virtual void execute();
+  virtual void submit();
 
 protected:
   virtual void infer() = 0;
   DISABLE_COPY_AND_ASSIGN(op);
 };
 
-std::unique_ptr<op> concat(const std::vector<memory> &srcs,
-                           memory dst,
+std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>> &srcs,
+                           std::unique_ptr<memory> &dst,
                            bool post_relu = false);
 }
