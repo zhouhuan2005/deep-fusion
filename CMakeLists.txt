@@ -55,21 +55,37 @@ endif()
 ################################ Configurations #######################################
 option(WITH_VNNI          "Compile with AVX512 VNNI support"        ${VNNI_FOUND})  # TODO: enable it when conv
 option(WITH_VERBOSE       "Compile with VERBOSE for profiling"      ${DEBUG_MODE})
-# enable below option will always allocate about 100MB for clear cache in benchmark
-option(WITH_COLD_CACHE    "Benchmark with cold cache method"        ${DEBUG_MODE})
+option(WITH_BENCHMARK     "Compile with benchmark"                             ON)
 option(WITH_GTEST         "Compile with gtest"                                 ON)
-option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)  # TODO: enable it if necessary
+# enable below option will always allocate about 100MB for clear cache in benchmark
+if(${DEBUG_MODE} AND ${WITH_BENCHMARK})
+  set(default_with_cold_cache ON)
+else()
+  set(default_with_cold_cache OFF)
+endif()
+option(WITH_COLD_CACHE    "Benchmark with cold cache method" ${default_with_cold_cache})
+
+# TODO: enable it if necessary
+# option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)
 ########################################################################################
 include(system)              # gcc flags
 include(simd)                # check if AVX512 or VNNI is supported
 include(external/mklml)      # download mklml package and use iomp for jitinfer, use others for mkldnn
-#include(external/mkldnn)     # download mkldnn for reference comparion
+include(external/mkldnn)     # download mkldnn for reference comparion
 include(external/xbyak)      # download xbyak
 include(external/gtest)      # download, build, install gtest
-#include(util)                # some utility functions
 
 if(NOT ${AVX512_FOUND})
   message(FATAL "AVX512 is not found! Only support on AVX512 yet!")
+endif()
+
+if(${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel")
+  # disable most features, only generate libjitinfer.so
+  set(WITH_VERBOSE OFF)
+  set(WITH_BENCHMARK OFF)
+  set(WITH_GTEST OFF)
+  set(WITH_GLOG OFF)
+  set(WITH_COLD_CACHE OFF)
 endif()
 
 if(WITH_VERBOSE)
@@ -88,12 +104,15 @@ set(EXTERNAL_LIBS
     ${MKLML_IOMP_LIB}
     gtest
     gtest_main
+    ${MKLDNN_LIB}
+    ${MKLML_LIB}
 )
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories(include)
 
 add_subdirectory(src)
 add_subdirectory(test)
+add_subdirectory(benchmark)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3 -O0" CACHE STRING "Disable optimize when debug")
 set(CMAKE_C_FLAGS_DEBUG "-ggdb3 -O0"  CACHE STRING "Disable optimize when debug")
