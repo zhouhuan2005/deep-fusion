@@ -18,6 +18,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "jitinfer.h"
 
 namespace jitinfer {
 namespace jit {
@@ -32,7 +33,7 @@ struct jit_concat_conf_t {
   int h, w;
   int oc;
   int n_inputs;
-  // data_type_t dtype;
+  memory::dtype dt;
   int typesize;
   int block;  // u8: 64, s32: 16
   bool with_relu;

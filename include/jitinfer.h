@@ -66,6 +66,8 @@ public:
   size_t size();
   size_t buffer_size();
   dims actual_dims() { return dims_; }
+  dtype data_type() { return dt_; }
+  format dim_format() { return fmt_; }
   void *data() { return data_; }
 
 private:

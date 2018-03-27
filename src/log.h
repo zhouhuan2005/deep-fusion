@@ -59,13 +59,13 @@ namespace jitinfer {
 #define check_compare(val0, val1, cmp) \
   if (!((val0)cmp(val1))) error("Check " #val0 " " #cmp " " #val1 " Failed!");
 
-#define check_eq(val0, val1, ...) check_compare(val0, val1, ==)
+#define check_eq(val0, val1) check_compare(val0, val1, ==)
 
-#define check_gt(val0, val1, ...) check_compare(val0, val1, >)
+#define check_gt(val0, val1) check_compare(val0, val1, >)
 
-#define check_ge(val0, val1, ...) check_compare(val0, val1, >=)
+#define check_ge(val0, val1) check_compare(val0, val1, >=)
 
-#define check_lt(val0, val1, ...) check_compare(val0, val1, <)
+#define check_lt(val0, val1) check_compare(val0, val1, <)
 
-#define check_le(val0, val1, ...) check_compare(val0, val1, <=)
+#define check_le(val0, val1) check_compare(val0, val1, <=)
 }

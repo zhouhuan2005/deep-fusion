@@ -19,26 +19,68 @@
 
 #include <jitinfer.h>
 #include "jit_concat_kernel.h"
+#include "jitinfer_thread.h"
 
 namespace jitinfer {
 
+template <typename dtype>
 class op_concat : public op {
 public:
-  explicit op_concat(bool post_relu) : op() {
-    kernel_ = new jit::jit_concat_kernel(/*jcp*/);
-    // acc memory
+  explicit op_concat(const std::vector<std::unique_ptr<memory>> &srcs,
+                     std::unique_ptr<memory> &dst,
+                     bool post_relu = false)
+      : op() {
+    kernel_ = new jit::jit_concat_kernel(srcs, dst, post_relu);
+    using namespace util;
+
+    const auto &jcp = kernel_->jcp;
+    const int num_srcs = jcp.n_inputs;
+    assert(num_srcs == srcs.size());
+
+    srcs_data_ = (const dtype **)malloc(num_srcs * sizeof(dtype *), 64);
+    ic_ = (int *)malloc(num_srcs * sizeof(int), 64);
+    nb_ic_ = (int *)malloc(num_srcs * sizeof(int), 64);
+
+    for (int i = 0; i < num_srcs; ++i) {
+      auto dim = srcs[i]->actual_dims();
+      assert(srcs[i]->dim_format() == memory::format::nhwc);
+      ic_[i] = dim[3];
+      nb_ic_[i] = ic_[i] / jcp.block;
+      // the src data is load here, if need update whe infer should change API
+      srcs_data_[i] = reinterpret_cast<const dtype *>(srcs[i]->data());
+    }
+    dst_data_ = (dtype *)dst->data();
+
+    const int nthreads = omp_get_max_threads();
+    debug("-------------nthr:%d", nthreads);
+    src_with_offset_ =
+        (const dtype **)malloc(nthreads * num_srcs * sizeof(dtype *), 64);
   }
 
-  ~op_concat() { delete kernel_; }
+  ~op_concat() {
+    free(ic_);
+    free(nb_ic_);
+    free(srcs_data_);
+    free(src_with_offset_);
+    delete kernel_;
+  }
+
+protected:
+  bool init_conf(jit::jit_concat_conf_t &conf,
+                 const std::vector<std::unique_ptr<memory>> &srcs,
+                 const std::unique_ptr<memory> &dst,
+                 bool post_relu = false) {
+    // TODO: can seperate kernel init to here
+    return true;
+  }
+  void infer() override;
 
 private:
-  void infer() override;
-  // pd_t conf_;
   jit::jit_concat_kernel *kernel_;
-
-  // const data_t **src_;
-  // const data_t **src_with_offset_;
-  // int *ic_;
-  // int *nb_ic_;
+  dtype *dst_data_;
+  const dtype **srcs_data_;
+  const dtype **src_with_offset_;
+  int *ic_;
+  int *nb_ic_;
 };
 }

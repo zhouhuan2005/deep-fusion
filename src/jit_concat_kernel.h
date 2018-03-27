@@ -19,6 +19,7 @@
 
 #include "jit_call_conf.h"
 #include "jit_generator.h"
+#include "log.h"
 
 namespace jitinfer {
 
@@ -27,16 +28,18 @@ namespace jit {
 struct jit_concat_kernel : public jit_generator {
   DECLARE_JIT_KERNEL(jit_concat_kernel);
 
-  jit_concat_kernel(/*jit_concat_conf_t ajcp*/) {
-    if (!init_conf()) {
-      ;  // throw error
+  jit_concat_kernel(const std::vector<std::unique_ptr<memory>>& srcs,
+                    const std::unique_ptr<memory>& dst,
+                    bool post_relu) {
+    if (!init_conf(srcs, dst, post_relu)) {
+      error("Init jit_concat kernel failed!");
     }
     generate();
-    jit_ker = (void (*)(jit_concat_call_s *))getCode();
+    jit_ker = (void (*)(jit_concat_call_s*))getCode();
   }
 
   jit_concat_conf_t jcp;
-  void (*jit_ker)(jit_concat_call_s *);
+  void (*jit_ker)(jit_concat_call_s*);
 
 private:
   using reg64_t = const Xbyak::Reg64;
@@ -59,7 +62,9 @@ private:
 
   void compute_one_input();
   void generate();
-  bool init_conf();
+  bool init_conf(const std::vector<std::unique_ptr<memory>>& srcs,
+                 const std::unique_ptr<memory>& dst,
+                 bool post_relu);
 };
 }
 }

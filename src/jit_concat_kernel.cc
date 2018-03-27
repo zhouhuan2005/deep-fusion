@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 #include "jit_concat_kernel.h"
-#include "util.h"
+#include "jitinfer_common.h"
 
 #define GET_OFF(field) offsetof(jit_concat_call_s, field)
 
@@ -94,6 +94,38 @@ void jit_concat_kernel::generate() {
 
   postamble();
 }
-bool jit_concat_kernel::init_conf() { return true; }
+bool jit_concat_kernel::init_conf(
+    const std::vector<std::unique_ptr<memory>>& srcs,
+    const std::unique_ptr<memory>& dst,
+    bool post_relu) {
+  jcp = jitinfer::util::zero<decltype(jcp)>();
+
+  jcp.n_inputs = srcs.size();
+  jcp.with_relu = post_relu;
+  auto dm = dst->actual_dims();
+  jcp.bs = dm[0];
+  jcp.h = dm[1];
+  jcp.w = dm[2];
+  jcp.oc = dm[3];
+  jcp.dt = dst->data_type();
+  jcp.typesize = dtype_size(jcp.dt);
+  if (!util::one_of(jcp.typesize, 1, 4)) {
+    // only s8, u8, s32, f32
+    return false;
+  }
+  check_eq(dst->dim_format(), memory::format::nhwc);
+
+  // TODO: when s8 or s32, load more,  can use xmm ymm,
+  jcp.block = 16;
+  for (size_t i = 0; i < srcs.size(); ++i) {
+    check_eq(srcs[i]->dim_format(), memory::format::nhwc);
+    check_eq(srcs[i]->data_type(), jcp.dt);
+    if (srcs[i]->actual_dims()[3] % jcp.block != 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
 }
 }

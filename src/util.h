@@ -49,6 +49,80 @@ template <typename T, typename P, typename... Args>
 inline bool one_of(T val, P item, Args... item_others) {
   return val == item || one_of(val, item_others...);
 }
+
+template <typename T>
+struct remove_reference {
+  typedef T type;
+};
+template <typename T>
+struct remove_reference<T &> {
+  typedef T type;
+};
+template <typename T>
+struct remove_reference<T &&> {
+  typedef T type;
+};
+
+template <typename T, typename U>
+inline typename remove_reference<T>::type div_up(const T a, const U b) {
+  assert(b);
+  return (a + b - 1) / b;
+}
+template <typename T>
+inline T &&forward(typename remove_reference<T>::type &t) {
+  return static_cast<T &&>(t);
+}
+template <typename T>
+inline T &&forward(typename remove_reference<T>::type &&t) {
+  return static_cast<T &&>(t);
+}
+
+template <typename T>
+inline typename remove_reference<T>::type zero() {
+  auto zero = typename remove_reference<T>::type();
+  return zero;
+}
+
+template <typename T, typename U>
+inline void balance211(T n, U team, U tid, T &n_start, T &n_end) {
+  T n_min = 1;
+  T &n_my = n_end;
+  if (team <= 1 || n == 0) {
+    n_start = 0;
+    n_my = n;
+  } else if (n_min == 1) {
+    // team = T1 + T2
+    // n = T1*n1 + T2*n2  (n1 - n2 = 1)
+    T n1 = div_up(n, (T)team);
+    T n2 = n1 - 1;
+    T T1 = n - n2 * (T)team;
+    n_my = (T)tid < T1 ? n1 : n2;
+    n_start = (T)tid <= T1 ? tid * n1 : T1 * n1 + ((T)tid - T1) * n2;
+  }
+
+  n_end += n_start;
+}
+
+template <typename T>
+inline T nd_iterator_init(T start) {
+  return start;
+}
+template <typename T, typename U, typename W, typename... Args>
+inline T nd_iterator_init(T start, U &x, const W &X, Args &&... tuple) {
+  start = nd_iterator_init(start, forward<Args>(tuple)...);
+  x = start % X;
+  return start / X;
+}
+
+inline bool nd_iterator_step() { return true; }
+template <typename U, typename W, typename... Args>
+inline bool nd_iterator_step(U &x, const W &X, Args &&... tuple) {
+  if (nd_iterator_step(forward<Args>(tuple)...)) {
+    x = (x + 1) % X;
+    return x == 0;
+  }
+  return false;
+}
 }
 
 void *malloc(size_t size, int alignment);

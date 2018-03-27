@@ -80,34 +80,4 @@ inline size_t dtype_size(memory::dtype dt) {
       assert(!"bad data_type");
   }
 }
-
-memory::dims nchw2format(const memory::nchw_dims& dm,
-                         const memory::format fmt) {
-  using format = memory::format;
-  memory::dims out;
-  switch (fmt) {
-    case format::nhwc:
-      out.resize(4);
-      out[0] = dm[0];
-      out[1] = dm[2];
-      out[2] = dm[3];
-      out[3] = dm[1];
-      break;
-    case format::nchw:
-      out.resize(4);
-      out[0] = dm[0];
-      out[1] = dm[1];
-      out[2] = dm[2];
-      out[3] = dm[3];
-      break;
-    default:
-      // log error, exit
-      assert(!"bad type");
-  }
-
-  // TODO: use check
-  assert(util::array_product<int>(dm.data(), dm.size()) ==
-         util::array_product<int>(out.data(), out.size()));
-  return out;
-}
 }
