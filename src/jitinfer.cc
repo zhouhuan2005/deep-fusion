@@ -75,9 +75,18 @@ size_t memory::size() {
 size_t memory::buffer_size() { return size() * dtype_size(dt_); }
 
 void op::submit() {
-  // TODO: add timer
+#ifdef WITH_VERBOSE
+  auto t_start = util::timer::get_current_ms();
+#endif
   infer();
+#ifdef WITH_VERBOSE
+  auto t_stop = util::timer::get_current_ms();
+  if (util::env::profiling_time()) {
+    info("%s infer %f", this->name(), t_stop - t_start);
+  }
+#endif
 }
+
 std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>>& srcs,
                            std::unique_ptr<memory>& dst,
                            bool post_relu) {

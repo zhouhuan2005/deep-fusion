@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #ifdef WIN32
 #include <malloc.h>
 #include <windows.h>
@@ -83,6 +84,8 @@ inline typename remove_reference<T>::type zero() {
   return zero;
 }
 
+// divide jobs on workers
+// for example 4 jobs to 3 worker get 2,1,1
 template <typename T, typename U>
 inline void balance211(T n, U team, U tid, T &n_start, T &n_end) {
   T n_min = 1;
@@ -123,13 +126,41 @@ inline bool nd_iterator_step(U &x, const W &X, Args &&... tuple) {
   }
   return false;
 }
+void clear_cache();
+
+#ifdef WITH_COLD_CACHE
+struct dummy_memory {
+public:
+  void clear_cache();
+  explicit dummy_memory(size_t n);
+  ~dummy_memory();
+
+private:
+  unsigned char *p_;
+  size_t size_;
+  // DISABLE_COPY_AND_ASSIGN
+  dummy_memory(const dummy_memory &) = delete;
+  dummy_memory(const dummy_memory &&) = delete;
+  dummy_memory &operator=(const dummy_memory &) = delete;
+  dummy_memory &operator=(const dummy_memory &&) = delete;
+};
+#endif
+
+namespace timer {
+inline double get_current_ms() {
+  struct timeval time;
+  gettimeofday(&time, NULL);
+  return 1e+3 * time.tv_sec + 1e-3 * time.tv_usec;
+};
 }
 
-void *malloc(size_t size, int alignment);
-
-void free(void *p);
-
-// TODO: optimize jit dump code and getenv
+namespace env {
 int _getenv(char *value, const char *name, int length);
+bool profiling_time();
 bool jit_dump_code();
+}
+}
+
+void *malloc(size_t size, int alignment = 64);
+void free(void *p);
 }

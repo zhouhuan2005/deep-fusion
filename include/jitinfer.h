@@ -87,6 +87,7 @@ public:
 
 protected:
   virtual void infer() = 0;
+  virtual const char *name() = 0;
   DISABLE_COPY_AND_ASSIGN(op);
 };
 

@@ -15,6 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 #include "util.h"
+#include "jitinfer_thread.h"
+#include "log.h"
 
 namespace jitinfer {
 
@@ -38,8 +40,40 @@ void free(void *p) {
   ::free(p);
 #endif
 }
+namespace util {
 
-// TODO: optimize jit dump code and getenv
+#ifdef WITH_COLD_CACHE
+dummy_memory::dummy_memory(size_t num_bytes) {
+  int max_nthr = omp_get_max_threads();
+  debug("Max OMP threads: %d", max_nthr);
+  size_ = num_bytes * max_nthr;
+  p_ = (unsigned char *)malloc(size_);
+}
+
+dummy_memory::~dummy_memory() { free(p_); }
+
+void dummy_memory::clear_cache() {
+#pragma omp parallel for
+  for (size_t i = 0; i < size_; ++i) {
+    // disable gcc optimize
+    volatile unsigned char write = 3, read = 4;
+    *(p_ + i) = write;
+    read = p_[i];
+  }
+}
+
+// skx, L3: 1.375MB * n
+//      L2: 1MB
+//      L1: 32KB
+constexpr size_t PAGE_2MB = 2 * 1024 * 1024;
+static dummy_memory dummy_mem(PAGE_2MB);
+void clear_cache() { dummy_mem.clear_cache(); }
+#else
+// hot cache, do nothing
+void clear_cache() { ; }
+#endif
+
+namespace env {
 int _getenv(char *value, const char *name, int length) {
   int result = 0;
   int last_idx = 0;
@@ -71,17 +105,37 @@ int _getenv(char *value, const char *name, int length) {
   return result;
 }
 
-static bool dump_jit_code;
+static bool profiling = false;
+// when need profiling
+// 1. cmake -DWITH_VERBOSE=ON
+// 2. export JITINFER_VERBOSE=1
+bool profiling_time() {
+  static bool initialized = false;
+  if (!initialized) {
+    const int len = 2;
+    char env_dump[len] = {0};
+    profiling =
+        _getenv(env_dump, "JITINFER_VERBOSE", len) == 1 && atoi(env_dump) == 1;
+    initialized = true;
+  }
+  return profiling;
+}
 
+static bool dump_jit_code = false;
+// when need dump jit code
+// 1. cmake -DCMAKE_BUILD_TYPE=DEBUG
+// 2. export JITINFER_DUMP_CODE
 bool jit_dump_code() {
   static bool initialized = false;
   if (!initialized) {
     const int len = 2;
     char env_dump[len] = {0};
-    dump_jit_code =
-        _getenv(env_dump, "MKLDNN_JIT_DUMP", len) == 1 && atoi(env_dump) == 1;
+    dump_jit_code = _getenv(env_dump, "JITINFER_DUMP_CODE", len) == 1 &&
+                    atoi(env_dump) == 1;
     initialized = true;
   }
   return dump_jit_code;
+}
+}
 }
 }

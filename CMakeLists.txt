@@ -23,9 +23,10 @@ endif()
 
 # CMAKE_BUILD_TYPE
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
       "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel"
       FORCE)
+  message(STATUS "CMAKE_BUILD_TYPE is unset, defaulting to Release")
 endif()
 
 set(PROJECT_NAME "JITInfer")
@@ -45,16 +46,24 @@ message(STATUS "CXX compiler: ${CMAKE_CXX_COMPILER}, version: "
         "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "C compiler: ${CMAKE_C_COMPILER}, version: "
         "${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
-################################ Configurations #######################################
-option(WITH_VNNI          "Compile with AVX512 VNNI support"        ${VNNI_FOUND})
-option(WITH_GTEST         "Compile with gtest"                                 ON)
-option(WITH_VERBOSE       "Compile with VERBOSE for profiling"                 ON)
-option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)  # TODO: acutally enable it
 
+if (${CMAKE_BUILD_TYPE} MATCHES "Release")
+  set(DEBUG_MODE OFF)
+else()
+  set(DEBUG_MODE ON)
+endif()
+################################ Configurations #######################################
+option(WITH_VNNI          "Compile with AVX512 VNNI support"        ${VNNI_FOUND})  # TODO: enable it when conv
+option(WITH_VERBOSE       "Compile with VERBOSE for profiling"      ${DEBUG_MODE})
+# enable below option will always allocate about 100MB for clear cache in benchmark
+option(WITH_COLD_CACHE    "Benchmark with cold cache method"        ${DEBUG_MODE})
+option(WITH_GTEST         "Compile with gtest"                                 ON)
+option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)  # TODO: enable it if necessary
 ########################################################################################
 include(system)              # gcc flags
 include(simd)                # check if AVX512 or VNNI is supported
-include(external/mklml)      # download mklml package and use iomp
+include(external/mklml)      # download mklml package and use iomp for jitinfer, use others for mkldnn
+#include(external/mkldnn)     # download mkldnn for reference comparion
 include(external/xbyak)      # download xbyak
 include(external/gtest)      # download, build, install gtest
 #include(util)                # some utility functions
@@ -65,6 +74,10 @@ endif()
 
 if(WITH_VERBOSE)
   add_definitions(-DWITH_VERBOSE)
+endif()
+
+if(WITH_COLD_CACHE)
+  add_definitions(-DWITH_COLD_CACHE)
 endif()
 
 if(WITH_GLOG)

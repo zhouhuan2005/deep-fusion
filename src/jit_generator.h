@@ -304,7 +304,7 @@ public:
 
 #ifndef NDEBUG
     // only can dump code in debug mode
-    if (jit_dump_code()) dump_code(code);
+    if (util::env::jit_dump_code()) dump_code(code);
 #endif
 
     return code;

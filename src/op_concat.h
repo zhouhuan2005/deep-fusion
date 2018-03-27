@@ -52,7 +52,7 @@ public:
     dst_data_ = (dtype *)dst->data();
 
     const int nthreads = omp_get_max_threads();
-    debug("-------------nthr:%d", nthreads);
+    debug("Max OMP threads: %d", nthreads);
     src_with_offset_ =
         (const dtype **)malloc(nthreads * num_srcs * sizeof(dtype *), 64);
   }
@@ -74,6 +74,7 @@ protected:
     return true;
   }
   void infer() override;
+  const char *name() { return "concat"; }
 
 private:
   jit::jit_concat_kernel *kernel_;
