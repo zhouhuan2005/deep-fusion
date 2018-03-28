@@ -126,25 +126,6 @@ inline bool nd_iterator_step(U &x, const W &X, Args &&... tuple) {
   }
   return false;
 }
-void clear_cache();
-
-#ifdef WITH_COLD_CACHE
-struct dummy_memory {
-public:
-  void clear_cache();
-  explicit dummy_memory(size_t n);
-  ~dummy_memory();
-
-private:
-  unsigned char *p_;
-  size_t size_;
-  // DISABLE_COPY_AND_ASSIGN
-  dummy_memory(const dummy_memory &) = delete;
-  dummy_memory(const dummy_memory &&) = delete;
-  dummy_memory &operator=(const dummy_memory &) = delete;
-  dummy_memory &operator=(const dummy_memory &&) = delete;
-};
-#endif
 
 namespace timer {
 inline double get_current_ms() {

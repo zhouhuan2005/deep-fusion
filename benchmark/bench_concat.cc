@@ -30,15 +30,6 @@ static int burning_iter = 50;
 static int iter = 100;
 static mkldnn::engine eng = mkldnn::engine(mkldnn::engine::cpu, 0);
 
-std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_relu_pd(
-    const mkldnn::memory::desc md) {
-  using namespace mkldnn;
-  auto relu_desc = eltwise_forward::desc(
-      prop_kind::forward_inference, algorithm::eltwise_relu, md, 0.f, 0.f);
-  return std::unique_ptr<eltwise_forward::primitive_desc>(
-      new eltwise_forward::primitive_desc(relu_desc, eng));
-}
-
 template <typename dtype>  // should be one of s32, s8, u8
 void bench_mkldnn_concat(bool with_relu = false) {
   using namespace mkldnn;
@@ -71,7 +62,7 @@ void bench_mkldnn_concat(bool with_relu = false) {
   }
   memory::dims dst_dims = {src_dims[0][0], oc, src_dims[0][2], src_dims[0][3]};
   memory::data_type data_type =
-      jitinfer::jitinfer2mkldnn(jitinfer::data_traits<dtype>::dtype);
+      jitinfer::util::jitinfer2mkldnn(jitinfer::data_traits<dtype>::dtype);
 
   // allocate srcs memory
   std::vector<memory::primitive_desc> srcs_pd;
@@ -101,7 +92,7 @@ void bench_mkldnn_concat(bool with_relu = false) {
 
   if (with_relu) {
     // add relu
-    relu_pd = get_relu_pd(dst_desc);
+    relu_pd = jitinfer::util::get_mkldnn_relu_pd(dst_desc, eng);
     fwd_relu.reset(new eltwise_forward(*relu_pd, dst, dst));
     pp_relu.clear();
     pp_relu.push_back(*fwd_relu);

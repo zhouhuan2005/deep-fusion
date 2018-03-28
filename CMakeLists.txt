@@ -58,12 +58,7 @@ option(WITH_VERBOSE       "Compile with VERBOSE for profiling"      ${DEBUG_MODE
 option(WITH_BENCHMARK     "Compile with benchmark"                             ON)
 option(WITH_GTEST         "Compile with gtest"                                 ON)
 # enable below option will always allocate about 100MB for clear cache in benchmark
-if(${DEBUG_MODE} AND ${WITH_BENCHMARK})
-  set(default_with_cold_cache ON)
-else()
-  set(default_with_cold_cache OFF)
-endif()
-option(WITH_COLD_CACHE    "Benchmark with cold cache method" ${default_with_cold_cache})
+option(WITH_COLD_CACHE    "Benchmark with cold cache method"    ${WITH_BENCHMARK})
 
 # TODO: enable it if necessary
 # option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)

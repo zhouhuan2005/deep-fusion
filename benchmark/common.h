@@ -20,34 +20,28 @@
 #include "mkldnn.hpp"
 
 namespace jitinfer {
+namespace util {
+void clear_cache();
 
-memory::dtype mkldnn2jitinfer(mkldnn::memory::data_type dt) {
-  switch (dt) {
-#define CASE(tp)                      \
-  case mkldnn::memory::data_type::tp: \
-    return memory::dtype::tp
-    CASE(f32);
-    CASE(s32);
-    CASE(s8);
-    CASE(u8);
-#undef CASE
-    default:
-      assert(!"bad data_type");
-  }
-}
+#ifdef WITH_COLD_CACHE
+struct dummy_memory {
+public:
+  void clear_cache();
+  explicit dummy_memory(size_t n);
+  ~dummy_memory();
 
-mkldnn::memory::data_type jitinfer2mkldnn(memory::dtype dt) {
-  switch (dt) {
-#define CASE(tp)          \
-  case memory::dtype::tp: \
-    return mkldnn::memory::data_type::tp
-    CASE(f32);
-    CASE(s32);
-    CASE(s8);
-    CASE(u8);
-#undef CASE
-    default:
-      assert(!"bad data_type");
-  }
+private:
+  unsigned char* p_;
+  size_t size_;
+  DISABLE_COPY_AND_ASSIGN(dummy_memory);
+};
+#endif
+
+memory::dtype mkldnn2jitinfer(mkldnn::memory::data_type dt);
+
+mkldnn::memory::data_type jitinfer2mkldnn(memory::dtype dt);
+
+std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(
+    const mkldnn::memory::desc md, const mkldnn::engine& eng);
 }
 }

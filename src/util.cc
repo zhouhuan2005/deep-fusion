@@ -15,8 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 #include "util.h"
-#include "jitinfer_thread.h"
-#include "log.h"
 
 namespace jitinfer {
 
@@ -40,39 +38,8 @@ void free(void *p) {
   ::free(p);
 #endif
 }
+
 namespace util {
-
-#ifdef WITH_COLD_CACHE
-dummy_memory::dummy_memory(size_t num_bytes) {
-  int max_nthr = omp_get_max_threads();
-  debug("Max OMP threads: %d", max_nthr);
-  size_ = num_bytes * max_nthr;
-  p_ = (unsigned char *)malloc(size_);
-}
-
-dummy_memory::~dummy_memory() { free(p_); }
-
-void dummy_memory::clear_cache() {
-#pragma omp parallel for
-  for (size_t i = 0; i < size_; ++i) {
-    // disable gcc optimize
-    volatile unsigned char write = 3, read = 4;
-    *(p_ + i) = write;
-    read = p_[i];
-  }
-}
-
-// skx, L3: 1.375MB * n
-//      L2: 1MB
-//      L1: 32KB
-constexpr size_t PAGE_2MB = 2 * 1024 * 1024;
-static dummy_memory dummy_mem(PAGE_2MB);
-void clear_cache() { dummy_mem.clear_cache(); }
-#else
-// hot cache, do nothing
-void clear_cache() { ; }
-#endif
-
 namespace env {
 int _getenv(char *value, const char *name, int length) {
   int result = 0;
