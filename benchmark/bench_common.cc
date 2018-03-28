@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include "common.h"
+#include "bench_common.h"
 #include "src/jitinfer_thread.h"
 #include "src/log.h"
 
@@ -62,14 +62,14 @@ memory::dtype mkldnn2jitinfer(mkldnn::memory::data_type dt) {
     CASE(u8);
 #undef CASE
     default:
-      assert(!"bad data_type");
+      error("Unkown type %d", dt);
   }
 }
 
 mkldnn::memory::data_type jitinfer2mkldnn(memory::dtype dt) {
   switch (dt) {
-#define CASE(tp)          \
-  case memory::dtype::tp: \
+#define CASE(tp)                    \
+  case jitinfer::memory::dtype::tp: \
     return mkldnn::memory::data_type::tp
     CASE(f32);
     CASE(s32);
@@ -77,8 +77,16 @@ mkldnn::memory::data_type jitinfer2mkldnn(memory::dtype dt) {
     CASE(u8);
 #undef CASE
     default:
-      assert(!"bad data_type");
+      error("Unkown type %d", dt);
   }
+}
+
+mkldnn::memory::dims jitinferDims2mkldnn(const memory::nchw_dims& nchwdims) {
+  mkldnn::memory::dims out(nchwdims.size());
+  for (size_t i = 0; i < out.size(); ++i) {
+    out[i] = nchwdims[i];
+  }
+  return out;
 }
 
 std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(

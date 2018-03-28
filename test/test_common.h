@@ -14,34 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
+
 #pragma once
 
-#include "jitinfer.h"
-#include "mkldnn.hpp"
+#include <cmath>
+
+#include "src/jitinfer_common.h"
+#include "src/jitinfer_thread.h"
 
 namespace jitinfer {
+
 namespace util {
-void clear_cache();
 
-#ifdef WITH_COLD_CACHE
-struct dummy_memory {
-public:
-  void clear_cache();
-  explicit dummy_memory(size_t n);
-  ~dummy_memory();
+template <typename data_t>
+static inline data_t set_value(size_t index) {
+  using data_type = jitinfer::memory::dtype;
 
-private:
-  unsigned char* p_;
-  size_t size_;
-  DISABLE_COPY_AND_ASSIGN(dummy_memory);
-};
-#endif
+  if (data_traits<data_t>::dtype == data_type::f32) {
+    double mean = 1., deviation = 1e-2;
+    return static_cast<data_t>(mean + deviation * sinf(float(index % 37)));
+  } else if (one_of(
+                 data_traits<data_t>::dtype, data_type::s8, data_type::s32)) {
+    return data_t(rand() % 21 - 10);
+  } else if (data_traits<data_t>::dtype == data_type::u8) {
+    return data_t(rand() % 17);
+  } else {
+    return data_t(0);
+  }
+}
 
-memory::dtype mkldnn2jitinfer(mkldnn::memory::data_type dt);
-
-mkldnn::memory::data_type jitinfer2mkldnn(memory::dtype dt);
-
-std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(
-    const mkldnn::memory::desc md, const mkldnn::engine& eng);
+template <typename T>
+void fill_data(T *p, size_t sz) {
+#pragma omp parallel for schedule(static)
+  for (size_t i = 0; i < sz; i++) {
+    p[i] = set_value<T>(i);
+  }
+}
 }
 }

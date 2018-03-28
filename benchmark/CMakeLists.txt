@@ -19,12 +19,12 @@ endif()
 
 # add all *.cc to unit test
 file(GLOB BENCHMARK_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
-set(COMMON_FILE common.cc)
+set(COMMON_FILE bench_common.cc)
 
 foreach(TEST_FILE ${BENCHMARK_SRCS})
   get_filename_component(TEST_FILE_NAME ${TEST_FILE} NAME_WE)
   set(EXE_NAME ${TEST_FILE_NAME})
-  if(${EXE_NAME} STREQUAL "common")
+  if(${EXE_NAME} STREQUAL "bench_common")
     continue()
   endif()
   add_executable(${EXE_NAME} ${TEST_FILE} ${COMMON_FILE})

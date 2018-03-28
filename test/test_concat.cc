@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-
 #include "gtest/gtest.h"
 #include "jitinfer.h"
-#include "src/jitinfer_common.h"
-#include "src/util.h"
+#include "test_common.h"
 
 namespace jitinfer {
 
@@ -26,13 +24,19 @@ using memory = jitinfer::memory;
 using format = jitinfer::memory::format;
 
 struct test_concat_params {
-  memory::format fmt;
   std::vector<memory::nchw_dims> srcs_dims;
   memory::nchw_dims dst_dims;
 };
 
 template <typename dtype>
 class test_concat : public ::testing::TestWithParam<test_concat_params> {
+  void check_data(const std::vector<std::unique_ptr<memory>> &srcs,
+                  const std::unique_ptr<memory> &dst,
+                  bool post_relu) {
+    // TODO: add mkldnn concat
+    ;
+  }
+
 protected:
   virtual void SetUp() {
     test_concat_params p =
@@ -40,15 +44,19 @@ protected:
     auto dt = data_traits<dtype>::dtype;
     std::vector<std::unique_ptr<memory>> srcs(p.srcs_dims.size());
     std::unique_ptr<memory> dst;
+    memory::format fmt = format::nhwc;
     for (size_t i = 0; i < p.srcs_dims.size(); ++i) {
-      srcs[i].reset(new memory(p.srcs_dims[i], p.fmt, dt));
-      // fill_data(srcs[i]->data(), srcs[i]->buffer_size());
+      srcs[i].reset(new memory(p.srcs_dims[i], fmt, dt));
+      util::fill_data<dtype>(static_cast<dtype *>(srcs[i]->data()),
+                             srcs[i]->size());
     }
-    dst.reset(new memory(p.dst_dims, p.fmt, dt));
-    // fill_data(dst->data(), dst->buffer_size());
+    dst.reset(new memory(p.dst_dims, fmt, dt));
 
-    auto c = concat(srcs, dst);
-    c->submit();
+    for (bool post_relu : {true, false}) {
+      auto c = concat(srcs, dst, post_relu);
+      c->submit();
+      check_data(srcs, dst, post_relu);
+    }
   }
 };
 
@@ -63,44 +71,31 @@ TEST_P(test_concat_s8, TestsConcat) {}
 TEST_P(test_concat_u8, TestsConcat) {}
 
 // @note: the srcs and dst are always given as nchw
-
 INSTANTIATE_TEST_CASE_P(
     TestConcat,
     test_concat_f32,
-    ::testing::Values(test_concat_params{format::nhwc,
-                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
-                                         {2, 160, 1, 1}},
-                      test_concat_params{format::nhwc,
-                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
-                                         {2, 160, 1, 1}}));
+    ::testing::Values(
+        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
+        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}}));
 
 INSTANTIATE_TEST_CASE_P(
     TestConcat,
     test_concat_s32,
-    ::testing::Values(test_concat_params{format::nhwc,
-                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
-                                         {2, 160, 1, 1}},
-                      test_concat_params{format::nhwc,
-                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
-                                         {2, 160, 1, 1}}));
+    ::testing::Values(
+        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
+        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}}));
 
 INSTANTIATE_TEST_CASE_P(
     TestConcat,
     test_concat_s8,
-    ::testing::Values(test_concat_params{format::nhwc,
-                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
-                                         {2, 160, 1, 1}},
-                      test_concat_params{format::nhwc,
-                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
-                                         {2, 160, 1, 1}}));
+    ::testing::Values(
+        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
+        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}}));
 
 INSTANTIATE_TEST_CASE_P(
     TestConcat,
     test_concat_u8,
-    ::testing::Values(test_concat_params{format::nhwc,
-                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
-                                         {2, 160, 1, 1}},
-                      test_concat_params{format::nhwc,
-                                         {{2, 64, 1, 1}, {2, 96, 1, 1}},
-                                         {2, 160, 1, 1}}));
+    ::testing::Values(
+        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
+        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}}));
 }

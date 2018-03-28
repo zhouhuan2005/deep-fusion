@@ -19,10 +19,10 @@ endif()
 
 
 # add all *.cc to unit test
-file(GLOB TETS_CASES_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
+file(GLOB TEST_CASES_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 set(MAIN_SRC_GTEST main.cc)
 
-foreach(TEST_FILE ${TETS_CASES_SRC})
+foreach(TEST_FILE ${TEST_CASES_SRC})
   get_filename_component(TEST_FILE_NAME ${TEST_FILE} NAME_WE)
   set(EXE_NAME ${TEST_FILE_NAME})
   if(${EXE_NAME} STREQUAL "main")
