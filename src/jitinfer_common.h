@@ -77,7 +77,8 @@ inline size_t dtype_size(memory::dtype dt) {
     CASE(memory::dtype::u8);
 #undef CASE
     default:
-      assert(!"bad data_type");
+      assert(!"Unkown data type");
+      return 0;
   }
 }
 }
