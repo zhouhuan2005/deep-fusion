@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
+#include <mkldnn.hpp>
 #include <sstream>
 #include "jitinfer.h"
 #include "log.h"
-#include "mkldnn.hpp"
 #include "util_benchmark.h"
 #include "util_mkldnn.h"
 
