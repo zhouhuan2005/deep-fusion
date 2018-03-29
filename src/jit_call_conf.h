@@ -35,7 +35,8 @@ struct jit_concat_conf_t {
   int n_inputs;
   memory::dtype dt;
   int typesize;
-  int block;  // u8: 64, s32: 16
+  int block;      // u8: 64, s32: 16
+  int bits_size;  // 128, 256, 512 : xmm, ymm, zmm
   bool with_relu;
 };
 }

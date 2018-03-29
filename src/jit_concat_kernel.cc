@@ -20,7 +20,6 @@
 #define GET_OFF(field) offsetof(jit_concat_call_s, field)
 
 namespace jitinfer {
-
 namespace jit {
 
 using namespace Xbyak;
@@ -35,30 +34,69 @@ void jit_concat_kernel::compute_one_input() {
   {
     auto src_addr = EVEX_compress_addr(reg_ptr_src_i, 0);
     auto dst_addr = EVEX_compress_addr(reg_ptr_dst, 0);
-    if (jcp.typesize == 4) {
-      // load from dst
-      vmovups(zmm_src, src_addr);
-      if (jcp.with_relu) {  // relu
-        switch (jcp.dt) {
-          case memory::dtype::s32:
+    // TODO: check switch is really ok for xbyak? use function instead??
+    // load from src
+    switch (jcp.bits_size) {
+      case 128:
+        vmovups(xmm_src, src_addr);
+        break;
+      case 256:
+        vmovups(ymm_src, src_addr);
+        break;
+      case 512:
+        vmovups(zmm_src, src_addr);
+        break;
+      default:
+        assert(!"error bits size");
+    }
+
+    if (jcp.with_relu) {
+      switch (jcp.bits_size) {
+        case 128:
+          if (jcp.dt == memory::dtype::s32) {
+            vpmaxsw(xmm_src, xmm_src, xmm_zero);
+          } else if (jcp.dt == memory::dtype::f32) {
+            vmaxps(xmm_src, xmm_zero, xmm_src);
+          } else {  // s8 or u8
+            vpmaxsb(xmm_src, xmm_src, xmm_zero);
+          }
+          break;
+        case 256:
+          if (jcp.dt == memory::dtype::s32) {
+            vpmaxsw(ymm_src, ymm_src, ymm_zero);
+          } else if (jcp.dt == memory::dtype::f32) {
+            vmaxps(ymm_src, ymm_zero, ymm_src);
+          } else {  // s8 or u8
+            vpmaxsb(ymm_src, ymm_src, ymm_zero);
+          }
+          break;
+        case 512:
+          if (jcp.dt == memory::dtype::s32) {
             vpmaxsw(zmm_src, zmm_src, zmm_zero);
-            break;
-          case memory::dtype::f32:
+          } else if (jcp.dt == memory::dtype::f32) {
             vmaxps(zmm_src, zmm_zero, zmm_src);
-            break;
-          default:
-            assert(!"error dtype");
-        }
+          } else {  // s8 or u8
+            vpmaxsb(zmm_src, zmm_src, zmm_zero);
+          }
+          break;
+        default:
+          assert(!"error bits size");
       }
-      // save to dst
-      vmovups(dst_addr, zmm_src);
-    } else {
-      vmovups(xmm_src, src_addr);
-      if (jcp.with_relu) {
-        vpmaxsb(xmm_src, xmm_src, xmm_zero);
-      }
-      // save to dst
-      vmovups(dst_addr, xmm_src);
+    }
+
+    // save to dst
+    switch (jcp.bits_size) {
+      case 128:
+        vmovups(dst_addr, xmm_src);
+        break;
+      case 256:
+        vmovups(dst_addr, ymm_src);
+        break;
+      case 512:
+        vmovups(dst_addr, zmm_src);
+        break;
+      default:
+        assert(!"error bits size");
     }
     add(reg_ptr_src_i, shift_c);
     add(reg_ptr_dst, shift_c);
@@ -75,12 +113,11 @@ void jit_concat_kernel::generate() {
   mov(reg_ptr_nb_ic, ptr[param + GET_OFF(nb_ic)]);
   mov(reg_ptr_dst, ptr[param + GET_OFF(dst)]);
 
-  if (jcp.typesize == 4) {
-    vpxord(zmm_zero, zmm_zero, zmm_zero);
-  } else {
-    vpxord(xmm_zero, xmm_zero, xmm_zero);
-  }
+  vpxord(xmm_zero, xmm_zero, xmm_zero);
+  vpxord(ymm_zero, ymm_zero, ymm_zero);
+  vpxord(zmm_zero, zmm_zero, zmm_zero);
 
+  // one kernel move one dst oc from all srcs
   xor_(reg_ninputs, reg_ninputs);
   Label l_next_input;
   L(l_next_input);
@@ -116,8 +153,29 @@ bool jit_concat_kernel::init_conf(
   }
   check_eq(dst->dim_format(), memory::format::nhwc);
 
-  // TODO: when s8 or s32, load more,  can use xmm ymm,
-  jcp.block = 16;
+  // when 4bytes, work on 16x, 8x or 4x channels
+  // when 1byte, work on 64x, 32x, 16x channels
+  // fine the workable block.
+  std::vector<int> blocks;
+  if (jcp.typesize == 1) {
+    blocks = {64, 32, 16};
+  } else {  // typesize == 4
+    blocks = {16, 8, 4};
+  }
+  for (size_t k = 0; k < blocks.size(); ++k) {
+    jcp.block = blocks[k];
+    size_t i;
+    for (i = 0; i < srcs.size(); ++i) {
+      if (srcs[i]->actual_dims()[3] % jcp.block != 0) {
+        // not dividable
+        break;
+      }
+    }
+    if (i == srcs.size()) {  // this block is dividable by all inputs channels
+      break;
+    }
+  }
+
   for (size_t i = 0; i < srcs.size(); ++i) {
     check_eq(srcs[i]->dim_format(), memory::format::nhwc);
     check_eq(srcs[i]->data_type(), jcp.dt);
@@ -126,6 +184,11 @@ bool jit_concat_kernel::init_conf(
     }
   }
 
+  jcp.bits_size = 8 * jcp.typesize * jcp.block;
+  if (!util::one_of(jcp.bits_size, 128, 256, 512)) {
+    // xmm, ymm, zmm
+    return false;
+  }
   return true;
 }
 }

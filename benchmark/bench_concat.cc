@@ -31,8 +31,9 @@ struct bench_params {
 };
 
 static bench_params default_cases[] = {
-    {{{4, 128, 244, 244}, {4, 256, 244, 244}}},
-    {{{4, 64, 64, 64}, {4, 96, 64, 64}}},
+    {{{4, 128, 244, 244}, {4, 256, 244, 244}}},  // 64x
+    {{{4, 64, 64, 64}, {4, 96, 64, 64}}},        // 32x
+    {{{4, 16, 9, 9}, {4, 64, 9, 9}}}             // 16x
 };
 
 void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,

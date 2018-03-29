@@ -62,6 +62,7 @@ void op_concat<dtype>::infer() {
         p.src = reinterpret_cast<const void **>(srcs);
         p.nb_ic = reinterpret_cast<const int *>(nb_ic_);
         p.dst = reinterpret_cast<void *>(dst_data_ + nhw * jcp.oc);
+        // one kernel move one dst oc from all srcs
         kernel_->jit_ker(&p);
         nd_iterator_step(n, jcp.bs, h, jcp.h, w, jcp.w);
       }

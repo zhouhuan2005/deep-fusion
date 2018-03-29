@@ -45,6 +45,7 @@ private:
   using reg64_t = const Xbyak::Reg64;
   using reg32_t = const Xbyak::Reg32;
   using zmm_t = const Xbyak::Zmm;
+  using ymm_t = const Xbyak::Ymm;
   using xmm_t = const Xbyak::Xmm;
 
   reg64_t param = abi_param1;
@@ -53,12 +54,15 @@ private:
   reg64_t reg_ptr_dst = r10;
   reg64_t reg_ptr_src_i = r11;
   reg64_t reg_ninputs = r12;
+  reg64_t reg_bitsize = r13;
   reg32_t reg_nb = r15d;
 
   xmm_t xmm_src = xmm_t(30);
+  ymm_t ymm_src = ymm_t(30);
   zmm_t zmm_src = zmm_t(30);
-  zmm_t zmm_zero = zmm_t(31);
   xmm_t xmm_zero = xmm_t(31);
+  ymm_t ymm_zero = ymm_t(31);
+  zmm_t zmm_zero = zmm_t(31);
 
   void compute_one_input();
   void generate();

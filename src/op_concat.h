@@ -46,13 +46,14 @@ public:
       assert(srcs[i]->dim_format() == memory::format::nhwc);
       ic_[i] = dim[3];
       nb_ic_[i] = ic_[i] / jcp.block;
+      check_eq(nb_ic_[i] * jcp.block, ic_[i]);
       // the src data is load here, if need update whe infer should change API
       srcs_data_[i] = reinterpret_cast<const dtype *>(srcs[i]->data());
     }
     dst_data_ = (dtype *)dst->data();
 
     const int nthreads = omp_get_max_threads();
-    debug("Max OMP threads: %d", nthreads);
+    debug("Concat: Max OMP threads: %d", nthreads);
     src_with_offset_ =
         (const dtype **)malloc(nthreads * num_srcs * sizeof(dtype *), 64);
   }
