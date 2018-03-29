@@ -53,7 +53,8 @@ class test_concat : public ::testing::TestWithParam<test_concat_params> {
       auto desc = mkldnn::memory::desc(mkldnn_dims, mkldnn_dt, fmt);
       auto mpd = mkldnn::memory::primitive_desc(desc, eng);
       auto src_memory = mkldnn::memory(mpd);
-      assert(srcs[i]->size() == src_memory.get_size() / sizeof(dtype));
+      assert(srcs[i]->size() ==
+             src_memory.get_primitive_desc().get_size() / sizeof(dtype));
       util::copy_array<dtype>((dtype*)(src_memory.get_data_handle()),
                               (dtype*)(srcs[i]->data()),
                               srcs[i]->size());

@@ -18,7 +18,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 if(WIN32 OR APPLE)
-  message(FATAL "Windows or Mac is not supported yet.")
+  message(FATAL_ERROR "Windows or Mac is not supported yet.")
 endif()
 
 # CMAKE_BUILD_TYPE
