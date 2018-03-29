@@ -125,39 +125,20 @@ TEST_P(test_concat_s8, TestsConcat) {}
 TEST_P(test_concat_u8, TestsConcat) {}
 
 // @note: the srcs and dst are always given as nchw
-INSTANTIATE_TEST_CASE_P(
-    TestConcat,
-    test_concat_f32,
-    ::testing::Values(
-        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
-        test_concat_params{{{2, 64, 4, 4}, {2, 32, 4, 4}}, {2, 96, 4, 4}},
-        test_concat_params{{{2, 256, 16, 16}, {2, 256, 16, 16}},
-                           {2, 512, 16, 16}}));
+#define CONCAT_TEST_CAES(tp)                                                  \
+  INSTANTIATE_TEST_CASE_P(                                                    \
+      TestConcat,                                                             \
+      test_concat_##tp,                                                       \
+      ::testing::Values(                                                      \
+          test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}}, \
+          test_concat_params{{{2, 64, 4, 4}, {2, 32, 4, 4}}, {2, 96, 4, 4}},  \
+          test_concat_params{{{2, 256, 16, 16}, {2, 256, 16, 16}},            \
+                             {2, 512, 16, 16}},                               \
+          test_concat_params{{{4, 128, 14, 14}, {4, 256, 14, 14}},            \
+                             {4, 384, 14, 14}}))
 
-INSTANTIATE_TEST_CASE_P(
-    TestConcat,
-    test_concat_s32,
-    ::testing::Values(
-        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
-        test_concat_params{{{2, 64, 4, 4}, {2, 32, 4, 4}}, {2, 96, 4, 4}},
-        test_concat_params{{{2, 256, 16, 16}, {2, 256, 16, 16}},
-                           {2, 512, 16, 16}}));
-
-INSTANTIATE_TEST_CASE_P(
-    TestConcat,
-    test_concat_s8,
-    ::testing::Values(
-        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
-        test_concat_params{{{2, 64, 4, 4}, {2, 32, 4, 4}}, {2, 96, 4, 4}},
-        test_concat_params{{{2, 256, 16, 16}, {2, 256, 16, 16}},
-                           {2, 512, 16, 16}}));
-
-INSTANTIATE_TEST_CASE_P(
-    TestConcat,
-    test_concat_u8,
-    ::testing::Values(
-        test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},
-        test_concat_params{{{2, 64, 4, 4}, {2, 32, 4, 4}}, {2, 96, 4, 4}},
-        test_concat_params{{{2, 256, 16, 16}, {2, 256, 16, 16}},
-                           {2, 512, 16, 16}}));
+CONCAT_TEST_CAES(f32);
+CONCAT_TEST_CAES(s32);
+CONCAT_TEST_CAES(s8);
+CONCAT_TEST_CAES(u8);
 }
