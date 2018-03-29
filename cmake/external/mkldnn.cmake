@@ -35,10 +35,20 @@ include_directories(${MKLDNN_INC_DIR})
 
 set(MKLDNN_DEPENDS   ${MKLML_PROJECT})
 message(STATUS "Build MKLDNN with MKLML ${MKLML_ROOT}")
-set(MKLDNN_CFLAG "${CMAKE_C_FLAGS} -Wno-error=strict-overflow \
--Wno-unused-but-set-variable -Wno-unused-variable -Wno-format-truncation")
-set(MKLDNN_CXXFLAG "${CMAKE_CXX_FLAGS} -Wno-error=strict-overflow \
--Wno-unused-but-set-variable -Wno-unused-variable -Wno-format-truncation")
+
+if(${CMAKE_C_COMPILER_VERSION} VERSION_LESS "5.4")
+  set(MKLDNN_CFLAG)
+else()
+  set(MKLDNN_CFLAG "${CMAKE_C_FLAGS} -Wno-error=strict-overflow \
+  -Wno-unused-but-set-variable -Wno-unused-variable -Wno-format-truncation")
+endif()
+
+if(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "5.4")
+  set(MKLDNN_CXXFLAG)
+else()
+  set(MKLDNN_CXXFLAG "${CMAKE_CXX_FLAGS} -Wno-error=strict-overflow \
+  -Wno-unused-but-set-variable -Wno-unused-variable -Wno-format-truncation")
+endif()
 
 # TODO: MKL-DNN have build error on gcc8.0 "within lambda, error: lvalue required as unary ‘&’ operand"
 # so here force to use lowwer gcc(5.4) to build MKL-DNN

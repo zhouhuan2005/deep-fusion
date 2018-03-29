@@ -102,17 +102,22 @@ int main()
 }" AVX2_FOUND)
 
 # Check AVX512
-set(CMAKE_REQUIRED_FLAGS ${AVX512_FLAG})
-set(AVX512_FOUND_EXITCODE 1 CACHE STRING "Result from TRY_RUN" FORCE)
-CHECK_CXX_SOURCE_RUNS("
-#include <immintrin.h>
-int main()
-{
-    __m512i a = _mm512_set_epi32 (-1, 2, -3, 4, -1, 2, -3, 4,
-                                  13, -5, 6, -7, 9, 2, -6, 3);
-    __m512i result = _mm512_abs_epi32 (a);
-    return 0;
-}" AVX512_FOUND)
+if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "5.4")
+  # the compiler gcc < 5.4 does not support AVX512, so give True for compiling
+  set(AVX512_FOUND ON)
+else()
+  set(CMAKE_REQUIRED_FLAGS ${AVX512_FLAG})
+  set(AVX512_FOUND_EXITCODE 1 CACHE STRING "Result from TRY_RUN" FORCE)
+  CHECK_CXX_SOURCE_RUNS("
+  #include <immintrin.h>
+  int main()
+  {
+      __m512i a = _mm512_set_epi32 (-1, 2, -3, 4, -1, 2, -3, 4,
+                                    13, -5, 6, -7, 9, 2, -6, 3);
+      __m512i result = _mm512_abs_epi32 (a);
+      return 0;
+  }" AVX512_FOUND)
+endif()
 
 # Check AVX512 VNNI
 set(CMAKE_REQUIRED_FLAGS ${AVX512_FLAG} ${VNNI_FLAG})

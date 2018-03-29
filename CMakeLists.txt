@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
-
 cmake_minimum_required(VERSION 3.5)
 
 if(WIN32 OR APPLE)
@@ -46,6 +45,11 @@ message(STATUS "CXX compiler: ${CMAKE_CXX_COMPILER}, version: "
         "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "C compiler: ${CMAKE_C_COMPILER}, version: "
         "${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
+
+if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "5.4")
+  message(WARNING "The CXX compiler version: ${CMAKE_C_COMPILER_ID}"
+        "${CMAKE_C_COMPILER_VERSION} is lower than 5.4, may have some unkown issues")
+endif()
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Release")
   set(DEBUG_MODE OFF)
