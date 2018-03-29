@@ -17,18 +17,21 @@ if(NOT ${WITH_GTEST})
   return()
 endif()
 
-
 # add all *.cc to unit test
 file(GLOB TEST_CASES_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 set(MAIN_SRC_GTEST main.cc)
-
+set(util_test_cc
+  ${PROJECT_SOURCE_DIR}/util/util_test.cc
+  ${PROJECT_SOURCE_DIR}/util/util_mkldnn.cc
+  ${PROJECT_SOURCE_DIR}/util/util_jitinfer.cc
+  ${PROJECT_SOURCE_DIR}/util/util.cc)
 foreach(TEST_FILE ${TEST_CASES_SRC})
   get_filename_component(TEST_FILE_NAME ${TEST_FILE} NAME_WE)
   set(EXE_NAME ${TEST_FILE_NAME})
   if(${EXE_NAME} STREQUAL "main")
     continue()
   endif()
-  add_executable(${EXE_NAME} ${MAIN_SRC_GTEST} ${TEST_FILE})
+  add_executable(${EXE_NAME} ${MAIN_SRC_GTEST} ${TEST_FILE} ${util_test_cc})
   target_link_libraries(${EXE_NAME} ${LIB_NAME} ${EXTERNAL_LIBS})
   add_dependencies(${EXE_NAME} ${external_project_dependencies})
   add_test(${EXE_NAME} ${EXE_NAME})

@@ -15,11 +15,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 #include <sstream>
-#include "bench_common.h"
 #include "jitinfer.h"
+#include "log.h"
 #include "mkldnn.hpp"
-#include "src/log.h"
-#include "src/util.h"
+#include "util_benchmark.h"
+#include "util_mkldnn.h"
 
 static int burning_iter = 50;
 static int iter = 100;
@@ -187,15 +187,15 @@ void bench_both(const bench_params& p,
     }
     oss << "(" << dims[0] << ", " << dims[1] << ", " << dims[2] << ", "
         << dims[3] << ")@NCHW, ";
-    mkldnn_srcs_dims[i] = jitinfer::util::jitinferDims2mkldnn(dims);
+    mkldnn_srcs_dims[i] = jitinfer::util::exchange::dims(dims);
   }
   oss << "==> Out(" << dst_dims[0] << ", " << dst_dims[1] << ", " << dst_dims[2]
       << ", " << dst_dims[3] << ")@NCHW";
   info("%s", oss.str().c_str());
-  mkldnn_dst_dims = jitinfer::util::jitinferDims2mkldnn(dst_dims);
+  mkldnn_dst_dims = jitinfer::util::exchange::dims(dst_dims);
   bench_mkldnn_concat(mkldnn_srcs_dims,
                       mkldnn_dst_dims,
-                      jitinfer::util::jitinfer2mkldnn(dt),
+                      jitinfer::util::exchange::dtype(dt),
                       post_relu);
   bench_jitinfer_concat(srcs_dims, dst_dims, dt, post_relu);
 }

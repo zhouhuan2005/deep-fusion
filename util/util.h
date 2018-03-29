@@ -14,7 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-
+/**
+ * This file defines some utilities that do not depends on jitinfer itself
+ */
 #pragma once
 
 #include <assert.h>
@@ -24,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include "omp_thread.h"
 #ifdef WIN32
 #include <malloc.h>
 #include <windows.h>
@@ -49,6 +52,15 @@ inline bool one_of(T val, P item) {
 template <typename T, typename P, typename... Args>
 inline bool one_of(T val, P item, Args... item_others) {
   return val == item || one_of(val, item_others...);
+}
+
+template <typename T>
+void copy_array(T *dst, T *src, size_t sz) {
+// do not use memcpy, in case of memory aligment
+#pragma omp parallel for schedule(static)
+  for (size_t i = 0; i < sz; ++i) {
+    dst[i] = src[i];
+  }
 }
 
 template <typename T>

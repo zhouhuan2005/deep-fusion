@@ -17,7 +17,7 @@
 #pragma once
 
 #include "jitinfer.h"
-#include "mkldnn.hpp"
+#include "util.h"
 
 namespace jitinfer {
 namespace util {
@@ -36,14 +36,5 @@ private:
   DISABLE_COPY_AND_ASSIGN(dummy_memory);
 };
 #endif
-
-mkldnn::memory::dims jitinferDims2mkldnn(const memory::nchw_dims& nchwdims);
-
-memory::dtype mkldnn2jitinfer(mkldnn::memory::data_type dt);
-
-mkldnn::memory::data_type jitinfer2mkldnn(memory::dtype dt);
-
-std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(
-    const mkldnn::memory::desc md, const mkldnn::engine& eng);
 }
 }

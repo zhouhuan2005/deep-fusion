@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-
 #pragma once
 
 #include <assert.h>
@@ -41,7 +40,7 @@ namespace jitinfer {
 
 #define warning(fmt, ...) log(stdout, WARNING, fmt, ##__VA_ARGS__)
 
-#define error(fmt, ...)                     \
+#define error_and_exit(fmt, ...)            \
   {                                         \
     log(stderr, ERROR, fmt, ##__VA_ARGS__); \
     exit(EXIT_FAILURE);                     \
@@ -54,10 +53,11 @@ namespace jitinfer {
 #endif
 
 #define check(x) \
-  if (!(x)) error("Check Failed!");
+  if (!(x)) error_and_exit("Check Failed!");
 
 #define check_compare(val0, val1, cmp) \
-  if (!((val0)cmp(val1))) error("Check " #val0 " " #cmp " " #val1 " Failed!");
+  if (!((val0)cmp(val1)))              \
+    error_and_exit("Check " #val0 " " #cmp " " #val1 " Failed!");
 
 #define check_eq(val0, val1) check_compare(val0, val1, ==)
 

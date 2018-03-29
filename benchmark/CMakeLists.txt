@@ -19,15 +19,16 @@ endif()
 
 # add all *.cc to unit test
 file(GLOB BENCHMARK_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
-set(COMMON_FILE bench_common.cc)
 
+set(util_bench_cc
+  ${PROJECT_SOURCE_DIR}/util/util_benchmark.cc
+  ${PROJECT_SOURCE_DIR}/util/util_mkldnn.cc
+  ${PROJECT_SOURCE_DIR}/util/util_jitinfer.cc
+  ${PROJECT_SOURCE_DIR}/util/util.cc)
 foreach(TEST_FILE ${BENCHMARK_SRCS})
   get_filename_component(TEST_FILE_NAME ${TEST_FILE} NAME_WE)
   set(EXE_NAME ${TEST_FILE_NAME})
-  if(${EXE_NAME} STREQUAL "bench_common")
-    continue()
-  endif()
-  add_executable(${EXE_NAME} ${TEST_FILE} ${COMMON_FILE})
+  add_executable(${EXE_NAME} ${TEST_FILE} ${util_bench_cc})
   target_link_libraries(${EXE_NAME} ${LIB_NAME} ${MKLML_LIB} ${MKLDNN_LIB} "-L${MKLML_LIB_DIR} -liomp5 -Wl,--as-needed")
   add_dependencies(${EXE_NAME} ${external_project_dependencies})
 endforeach()

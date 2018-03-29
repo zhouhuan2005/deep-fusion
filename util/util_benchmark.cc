@@ -14,10 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-
-#include "bench_common.h"
-#include "src/jitinfer_thread.h"
-#include "src/log.h"
+#include "util_benchmark.h"
+#include "log.h"
+#include "omp_thread.h"
 
 namespace jitinfer {
 namespace util {
@@ -50,52 +49,5 @@ void clear_cache() { dummy_mem.clear_cache(); }
 // hot cache, do nothing
 void clear_cache() { ; }
 #endif
-
-memory::dtype mkldnn2jitinfer(mkldnn::memory::data_type dt) {
-  switch (dt) {
-#define CASE(tp)                      \
-  case mkldnn::memory::data_type::tp: \
-    return memory::dtype::tp
-    CASE(f32);
-    CASE(s32);
-    CASE(s8);
-    CASE(u8);
-#undef CASE
-    default:
-      error("Unkown type %d", dt);
-  }
-}
-
-mkldnn::memory::data_type jitinfer2mkldnn(memory::dtype dt) {
-  switch (dt) {
-#define CASE(tp)                    \
-  case jitinfer::memory::dtype::tp: \
-    return mkldnn::memory::data_type::tp
-    CASE(f32);
-    CASE(s32);
-    CASE(s8);
-    CASE(u8);
-#undef CASE
-    default:
-      error("Unkown type %d", dt);
-  }
-}
-
-mkldnn::memory::dims jitinferDims2mkldnn(const memory::nchw_dims& nchwdims) {
-  mkldnn::memory::dims out(nchwdims.size());
-  for (size_t i = 0; i < out.size(); ++i) {
-    out[i] = nchwdims[i];
-  }
-  return out;
-}
-
-std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(
-    const mkldnn::memory::desc md, const mkldnn::engine& eng) {
-  using namespace mkldnn;
-  auto relu_desc = eltwise_forward::desc(
-      prop_kind::forward_inference, algorithm::eltwise_relu, md, 0.f, 0.f);
-  return std::unique_ptr<eltwise_forward::primitive_desc>(
-      new eltwise_forward::primitive_desc(relu_desc, eng));
-}
 }
 }

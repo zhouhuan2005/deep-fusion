@@ -32,7 +32,7 @@ struct jit_concat_kernel : public jit_generator {
                     const std::unique_ptr<memory>& dst,
                     bool post_relu) {
     if (!init_conf(srcs, dst, post_relu)) {
-      error("Init jit_concat kernel failed!");
+      error_and_exit("Init jit_concat kernel failed!");
     }
     generate();
     jit_ker = (void (*)(jit_concat_call_s*))getCode();

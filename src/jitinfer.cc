@@ -15,10 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 #include "jitinfer.h"
-#include "jitinfer_common.h"
-#include "util.h"
-
 #include "op_concat.h"
+#include "util_jitinfer.h"
 
 namespace jitinfer {
 
@@ -42,10 +40,8 @@ memory::dims nchw2format(const memory::nchw_dims& dm,
       out[3] = dm[3];
       break;
     default:
-      // log error, exit
-      assert(!"bad type");
+      error_and_exit("bad type");
   }
-
   check_eq(util::array_product<int>(dm.data(), dm.size()),
            util::array_product<int>(out.data(), out.size()));
   return out;
@@ -72,7 +68,7 @@ size_t memory::size() {
   return util::array_product<int>(dims_.data(), dims_.size());
 }
 
-size_t memory::buffer_size() { return size() * dtype_size(dt_); }
+size_t memory::buffer_size() { return size() * util::dtype_size(dt_); }
 
 void op::submit() {
 #ifdef WITH_VERBOSE

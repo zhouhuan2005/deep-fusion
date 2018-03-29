@@ -19,7 +19,7 @@
 
 #include <jitinfer.h>
 #include "jit_concat_kernel.h"
-#include "jitinfer_thread.h"
+#include "omp_thread.h"
 
 namespace jitinfer {
 

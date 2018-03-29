@@ -16,12 +16,18 @@
  ******************************************************************************/
 #pragma once
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <array>
 #include <memory>
 #include <vector>
 
 namespace jitinfer {
+
+typedef float f32;
+typedef int32_t s32;
+typedef int8_t s8;
+typedef uint8_t u8;
 
 // Disable the copy and assignment operator for a class.
 #ifndef DISABLE_COPY_AND_ASSIGN

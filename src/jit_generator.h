@@ -31,7 +31,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-
 #pragma once
 
 #include <type_traits>
@@ -48,8 +47,7 @@
  * FIXME: replace size_t parameters with the appropriate ones */
 #pragma warning(disable : 4267)
 #endif
-#include "jitinfer_thread.h"
-#include "util.h"
+#include "util_jitinfer.h"
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
 

@@ -59,7 +59,6 @@ option(WITH_BENCHMARK     "Compile with benchmark"                             O
 option(WITH_GTEST         "Compile with gtest"                                 ON)
 # enable below option will always allocate about 100MB for clear cache in benchmark
 option(WITH_COLD_CACHE    "Benchmark with cold cache method"    ${WITH_BENCHMARK})
-
 # TODO: enable it if necessary
 # option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)
 ########################################################################################
@@ -70,8 +69,8 @@ include(external/mkldnn)     # download mkldnn for reference comparion
 include(external/xbyak)      # download xbyak
 include(external/gtest)      # download, build, install gtest
 
-if(NOT ${AVX512_FOUND})
-  message(FATAL "AVX512 is not found! Only support on AVX512 yet!")
+if(NOT AVX512_FOUND)
+  message(FATAL_ERROR "AVX512 is not found! Only support on AVX512 yet!")
 endif()
 
 if(${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel")
@@ -91,9 +90,9 @@ if(WITH_COLD_CACHE)
   add_definitions(-DWITH_COLD_CACHE)
 endif()
 
-if(WITH_GLOG)
-  add_definitions(-DWITH_GLOG)
-endif()
+#if(WITH_GLOG)
+#  add_definitions(-DWITH_GLOG)
+#endif()
 
 set(EXTERNAL_LIBS
     ${MKLML_IOMP_LIB}
@@ -104,6 +103,11 @@ set(EXTERNAL_LIBS
 )
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories(include)
+include_directories(util)
+
+# TODO: util::_getenv has warnning
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overflow")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow")
 
 add_subdirectory(src)
 add_subdirectory(test)

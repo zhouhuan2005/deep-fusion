@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 #include "jit_concat_kernel.h"
-#include "jitinfer_common.h"
+#include "util_jitinfer.h"
 
 #define GET_OFF(field) offsetof(jit_concat_call_s, field)
 
@@ -39,14 +39,16 @@ void jit_concat_kernel::compute_one_input() {
       // load from dst
       vmovups(zmm_src, src_addr);
       if (jcp.with_relu) {  // relu
-                            // TODO: enable dtype
-                            /*
-                              switch (jcp.dtype) {
-                                case data_type::s32: vpmaxsw(zmm_src, zmm_src, zmm_zero); break;
-                                case data_type::f32: vmaxps(zmm_src, zmm_zero, zmm_src); break;
-                                default: assert(!"error dtype");
-                              }
-                              */
+        switch (jcp.dt) {
+          case memory::dtype::s32:
+            vpmaxsw(zmm_src, zmm_src, zmm_zero);
+            break;
+          case memory::dtype::f32:
+            vmaxps(zmm_src, zmm_zero, zmm_src);
+            break;
+          default:
+            assert(!"error dtype");
+        }
       }
       // save to dst
       vmovups(dst_addr, zmm_src);
@@ -58,7 +60,6 @@ void jit_concat_kernel::compute_one_input() {
       // save to dst
       vmovups(dst_addr, xmm_src);
     }
-
     add(reg_ptr_src_i, shift_c);
     add(reg_ptr_dst, shift_c);
     dec(reg_nb);
@@ -108,7 +109,7 @@ bool jit_concat_kernel::init_conf(
   jcp.w = dm[2];
   jcp.oc = dm[3];
   jcp.dt = dst->data_type();
-  jcp.typesize = dtype_size(jcp.dt);
+  jcp.typesize = util::dtype_size(jcp.dt);
   if (!util::one_of(jcp.typesize, 1, 4)) {
     // only s8, u8, s32, f32
     return false;
