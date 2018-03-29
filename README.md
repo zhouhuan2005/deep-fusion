@@ -28,8 +28,8 @@ This will only generate jitinfer library without any benchmark utilities and gte
 `cmake .. -DCMAKE_BUILD_TYPE=MinSizeRel`
 
 ## Operators
-1. concat op do not use any VNNI yet.
-2. conv fusion later will support VNNI.
+1. concat and relu fusion.
+2. (TBD) conv relu and conv1x1relu fusion (will support VNNI).
 
 ## How to contribute
 1. `pip install pre-commit`, about pre-commit check [here](http://pre-commit.com/#plugins).
