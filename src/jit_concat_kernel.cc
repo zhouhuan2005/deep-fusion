@@ -19,90 +19,143 @@
 
 #define GET_OFF(field) offsetof(jit_concat_call_s, field)
 
+// @note: do not use any MACRO or #define inside JIT kernel
+// it would have some uncertain issue in JIT, need figure out why
+
 namespace jitinfer {
 namespace jit {
 
 using namespace Xbyak;
 
-void jit_concat_kernel::compute_one_input() {
+void jit_concat_kernel::compute_one_input_with_zmm() {
   Label l_next_block;
   int shift_c = jcp.typesize * jcp.block;
   mov(reg_nb, dword[reg_ptr_nb_ic]);
   mov(reg_ptr_src_i, ptr[reg_ptr_src]);
-
   L(l_next_block);
   {
     auto src_addr = EVEX_compress_addr(reg_ptr_src_i, 0);
     auto dst_addr = EVEX_compress_addr(reg_ptr_dst, 0);
-    // TODO: check switch is really ok for xbyak? use function instead??
-    // load from src
-    switch (jcp.bits_size) {
-      case 128:
-        vmovups(xmm_src, src_addr);
-        break;
-      case 256:
-        vmovups(ymm_src, src_addr);
-        break;
-      case 512:
-        vmovups(zmm_src, src_addr);
-        break;
-      default:
-        assert(!"error bits size");
-    }
-
+    // load to src
+    vmovups(zmm_src, src_addr);
     if (jcp.with_relu) {
-      switch (jcp.bits_size) {
-        case 128:
-          if (jcp.dt == memory::dtype::s32) {
-            vpmaxsw(xmm_src, xmm_src, xmm_zero);
-          } else if (jcp.dt == memory::dtype::f32) {
-            vmaxps(xmm_src, xmm_zero, xmm_src);
-          } else {  // s8 or u8
-            vpmaxsb(xmm_src, xmm_src, xmm_zero);
-          }
-          break;
-        case 256:
-          if (jcp.dt == memory::dtype::s32) {
-            vpmaxsw(ymm_src, ymm_src, ymm_zero);
-          } else if (jcp.dt == memory::dtype::f32) {
-            vmaxps(ymm_src, ymm_zero, ymm_src);
-          } else {  // s8 or u8
-            vpmaxsb(ymm_src, ymm_src, ymm_zero);
-          }
-          break;
-        case 512:
-          if (jcp.dt == memory::dtype::s32) {
-            vpmaxsw(zmm_src, zmm_src, zmm_zero);
-          } else if (jcp.dt == memory::dtype::f32) {
-            vmaxps(zmm_src, zmm_zero, zmm_src);
-          } else {  // s8 or u8
-            vpmaxsb(zmm_src, zmm_src, zmm_zero);
-          }
-          break;
-        default:
-          assert(!"error bits size");
+      if (jcp.dt == memory::dtype::s32) {
+        vpmaxsw(zmm_src, zmm_src, zmm_zero);
+      } else if (jcp.dt == memory::dtype::f32) {
+        vmaxps(zmm_src, zmm_zero, zmm_src);
+      } else {  // s8 or u8
+        vpmaxsb(zmm_src, zmm_src, zmm_zero);
       }
     }
-
     // save to dst
-    switch (jcp.bits_size) {
-      case 128:
-        vmovups(dst_addr, xmm_src);
-        break;
-      case 256:
-        vmovups(dst_addr, ymm_src);
-        break;
-      case 512:
-        vmovups(dst_addr, zmm_src);
-        break;
-      default:
-        assert(!"error bits size");
-    }
+    vmovups(dst_addr, zmm_src);
     add(reg_ptr_src_i, shift_c);
     add(reg_ptr_dst, shift_c);
     dec(reg_nb);
     cmp(reg_nb, 0);
     jg(l_next_block, T_NEAR);
+  }
+}
+
+void jit_concat_kernel::compute_one_input_with_ymm() {
+  Label l_next_block;
+  int shift_c = jcp.typesize * jcp.block;
+  mov(reg_nb, dword[reg_ptr_nb_ic]);
+  mov(reg_ptr_src_i, ptr[reg_ptr_src]);
+  L(l_next_block);
+  {
+    auto src_addr = EVEX_compress_addr(reg_ptr_src_i, 0);
+    auto dst_addr = EVEX_compress_addr(reg_ptr_dst, 0);
+    // load to src
+    vmovups(ymm_src, src_addr);
+    if (jcp.with_relu) {
+      if (jcp.dt == memory::dtype::s32) {
+        vpmaxsw(ymm_src, ymm_src, ymm_zero);
+      } else if (jcp.dt == memory::dtype::f32) {
+        vmaxps(ymm_src, ymm_zero, ymm_src);
+      } else {  // s8 or u8
+        vpmaxsb(ymm_src, ymm_src, ymm_zero);
+      }
+    }
+    // save to dst
+    vmovups(dst_addr, ymm_src);
+    add(reg_ptr_src_i, shift_c);
+    add(reg_ptr_dst, shift_c);
+    dec(reg_nb);
+    cmp(reg_nb, 0);
+    jg(l_next_block, T_NEAR);
+  }
+}
+
+void jit_concat_kernel::compute_one_input_with_xmm() {
+  Label l_next_block;
+  int shift_c = jcp.typesize * jcp.block;
+  mov(reg_nb, dword[reg_ptr_nb_ic]);
+  mov(reg_ptr_src_i, ptr[reg_ptr_src]);
+  L(l_next_block);
+  {
+    auto src_addr = EVEX_compress_addr(reg_ptr_src_i, 0);
+    auto dst_addr = EVEX_compress_addr(reg_ptr_dst, 0);
+    // load to src
+    vmovups(xmm_src, src_addr);
+    if (jcp.with_relu) {
+      if (jcp.dt == memory::dtype::s32) {
+        vpmaxsw(xmm_src, xmm_src, xmm_zero);
+      } else if (jcp.dt == memory::dtype::f32) {
+        vmaxps(xmm_src, xmm_zero, xmm_src);
+      } else {  // s8 or u8
+        vpmaxsb(xmm_src, xmm_src, xmm_zero);
+      }
+    }
+    // save to dst
+    vmovups(dst_addr, xmm_src);
+    add(reg_ptr_src_i, shift_c);
+    add(reg_ptr_dst, shift_c);
+    dec(reg_nb);
+    cmp(reg_nb, 0);
+    jg(l_next_block, T_NEAR);
+  }
+}
+
+void jit_concat_kernel::compute_with_zmm() {
+  xor_(reg_ninputs, reg_ninputs);
+  Label l_next_input;
+  L(l_next_input);
+  {
+    compute_one_input_with_zmm();
+    add(reg_ptr_src, sizeof(void*));  // move 64bits
+    add(reg_ptr_nb_ic, sizeof(int));  // move one int
+    inc(reg_ninputs);
+    cmp(reg_ninputs, jcp.n_inputs);
+    jl(l_next_input, T_NEAR);
+  }
+}
+
+void jit_concat_kernel::compute_with_ymm() {
+  xor_(reg_ninputs, reg_ninputs);
+  Label l_next_input;
+  L(l_next_input);
+  {
+    compute_one_input_with_ymm();
+    add(reg_ptr_src, sizeof(void*));  // move 64bits
+    add(reg_ptr_nb_ic, sizeof(int));  // move one int
+    inc(reg_ninputs);
+    cmp(reg_ninputs, jcp.n_inputs);
+    jl(l_next_input, T_NEAR);
+  }
+}
+
+void jit_concat_kernel::compute_with_xmm() {
+  xor_(reg_ninputs, reg_ninputs);
+  Label l_next_input;
+  L(l_next_input);
+  {
+    compute_one_input_with_xmm();
+    add(reg_ptr_src, sizeof(void*));  // move 64bits
+    add(reg_ptr_nb_ic, sizeof(int));  // move one int
+    inc(reg_ninputs);
+    cmp(reg_ninputs, jcp.n_inputs);
+    jl(l_next_input, T_NEAR);
   }
 }
 
@@ -118,18 +171,23 @@ void jit_concat_kernel::generate() {
   vpxord(zmm_zero, zmm_zero, zmm_zero);
 
   // one kernel move one dst oc from all srcs
-  xor_(reg_ninputs, reg_ninputs);
-  Label l_next_input;
-  L(l_next_input);
-  {
-    compute_one_input();
-    add(reg_ptr_src, sizeof(void*));  // move 64bits
-    add(reg_ptr_nb_ic, sizeof(int));  // move one int
-    inc(reg_ninputs);
-    cmp(reg_ninputs, jcp.n_inputs);
-    jl(l_next_input, T_NEAR);
-  }
+  mov(reg_bitsize, jcp.bits_size);
+  Label l_use_ymm, l_use_xmm, l_ret;
+  cmp(reg_bitsize, 512);
+  jne(l_use_ymm, T_NEAR);
+  compute_with_zmm();
+  jmp(l_ret, T_NEAR);
 
+  L(l_use_ymm);
+  cmp(reg_bitsize, 256);
+  jne(l_use_xmm, T_NEAR);
+  compute_with_ymm();
+  jmp(l_ret, T_NEAR);
+
+  L(l_use_xmm);
+  compute_with_xmm();
+
+  L(l_ret);
   postamble();
 }
 bool jit_concat_kernel::init_conf(

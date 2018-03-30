@@ -64,7 +64,12 @@ private:
   ymm_t ymm_zero = ymm_t(31);
   zmm_t zmm_zero = zmm_t(31);
 
-  void compute_one_input();
+  void compute_with_zmm();
+  void compute_with_ymm();
+  void compute_with_xmm();
+  void compute_one_input_with_zmm();
+  void compute_one_input_with_ymm();
+  void compute_one_input_with_xmm();
   void generate();
   bool init_conf(const std::vector<std::unique_ptr<memory>>& srcs,
                  const std::unique_ptr<memory>& dst,
