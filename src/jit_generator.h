@@ -300,8 +300,8 @@ public:
   const Xbyak::uint8 *getCode() {
     const Xbyak::uint8 *code = CodeGenerator::getCode();
 
-#ifndef NDEBUG
-    // only can dump code in debug mode
+#ifdef WITH_DUMP_CODE
+    // only can dump code when cmake option is enabled
     if (util::env::jit_dump_code()) dump_code(code);
 #endif
 

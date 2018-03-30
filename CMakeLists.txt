@@ -56,13 +56,15 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Release")
 else()
   set(DEBUG_MODE ON)
 endif()
+
 ################################ Configurations #######################################
-option(WITH_VNNI          "Compile with AVX512 VNNI support"        ${VNNI_FOUND})  # TODO: enable it when conv
-option(WITH_VERBOSE       "Compile with VERBOSE for profiling"      ${DEBUG_MODE})
-option(WITH_BENCHMARK     "Compile with benchmark"                             ON)
-option(WITH_GTEST         "Compile with gtest"                                 ON)
+option(WITH_VNNI          "Compile with AVX512 VNNI support"          ${VNNI_FOUND})  # TODO: enable it when conv
+option(WITH_VERBOSE       "Compile with VERBOSE for profiling"        ${DEBUG_MODE})
+option(WITH_DUMP_CODE     "Compile with enabling dump code from JIT"  ${DEBUG_MODE})
+option(WITH_BENCHMARK     "Compile with benchmark"                               ON)
+option(WITH_GTEST         "Compile with gtest"                                   ON)
 # enable below option will always allocate about 100MB for clear cache in benchmark
-option(WITH_COLD_CACHE    "Benchmark with cold cache method"    ${WITH_BENCHMARK})
+option(WITH_COLD_CACHE    "Benchmark with cold cache method"      ${WITH_BENCHMARK})
 # TODO: enable it if necessary
 # option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)
 ########################################################################################
@@ -80,6 +82,7 @@ endif()
 if(${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel")
   # disable most features, only generate libjitinfer.so
   set(WITH_VERBOSE OFF)
+  set(WITH_DUMP_CODE OFF)
   set(WITH_BENCHMARK OFF)
   set(WITH_GTEST OFF)
   set(WITH_GLOG OFF)
@@ -88,6 +91,10 @@ endif()
 
 if(WITH_VERBOSE)
   add_definitions(-DWITH_VERBOSE)
+endif()
+
+if(WITH_DUMP_CODE)
+  add_definitions(-DWITH_DUMP_CODE)
 endif()
 
 if(WITH_COLD_CACHE)
