@@ -30,12 +30,9 @@ dummy_memory::dummy_memory(size_t num_bytes) {
 }
 dummy_memory::~dummy_memory() { free(p_); }
 void dummy_memory::clear_cache() {
-#pragma omp parallel for
+#pragma omp parallel for schedule(static)
   for (size_t i = 0; i < size_; ++i) {
-    // disable gcc optimize
-    volatile unsigned char write = 3, read = 4;
-    *(p_ + i) = write;
-    read = p_[i];
+    p_[i] = p_[i] * 2;
   }
 }
 
