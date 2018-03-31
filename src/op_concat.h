@@ -19,6 +19,7 @@
 
 #include <jitinfer.h>
 #include "jit_concat_kernel.h"
+#include "log.h"
 #include "omp_thread.h"
 
 namespace jitinfer {
@@ -30,10 +31,14 @@ public:
                      std::unique_ptr<memory> &dst,
                      bool post_relu = false)
       : op() {
-    kernel_ = new jit::jit_concat_kernel(srcs, dst, post_relu);
-    using namespace util;
+    jit::jit_concat_conf_t conf;
+    if (!init_conf(conf, srcs, dst, post_relu)) {
+      error_and_exit("Init Concat op failed!");
+    }
 
-    const auto &jcp = kernel_->jcp;
+    kernel_ = new jit::jit_concat_kernel(conf);
+
+    const auto &jcp = kernel_->jcp_;
     const int num_srcs = jcp.n_inputs;
     assert(num_srcs == srcs.size());
 
@@ -71,8 +76,9 @@ protected:
                  const std::vector<std::unique_ptr<memory>> &srcs,
                  const std::unique_ptr<memory> &dst,
                  bool post_relu = false) {
-    // TODO: can seperate kernel init to here
-    return true;
+    // TODO: can add more init of op_concat itself
+    // before run into kernel init_conf
+    return jit::jit_concat_kernel::init_conf(conf, srcs, dst, post_relu);
   }
   void infer() override;
   const char *name() { return "concat"; }

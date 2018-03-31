@@ -22,7 +22,7 @@ namespace jitinfer {
 template <typename dtype>
 void op_concat<dtype>::infer() {
   using namespace util;
-  const auto &jcp = kernel_->jcp;
+  const auto &jcp = kernel_->jcp_;
 
   const int work_amount = jcp.bs * jcp.h * jcp.w;
   const int max = omp_get_max_threads();
@@ -41,7 +41,7 @@ void op_concat<dtype>::infer() {
       p.src = reinterpret_cast<const void **>(srcs);
       p.nb_ic = reinterpret_cast<const int *>(nb_ic_);
       p.dst = reinterpret_cast<void *>(dst_data_ + nhw * jcp.oc);
-      kernel_->jit_ker(&p);
+      kernel_->jit_ker_(&p);
     }
   } else {
 // if work amount > max omp threads, need balance
@@ -63,7 +63,7 @@ void op_concat<dtype>::infer() {
         p.nb_ic = reinterpret_cast<const int *>(nb_ic_);
         p.dst = reinterpret_cast<void *>(dst_data_ + nhw * jcp.oc);
         // one kernel move one dst oc from all srcs
-        kernel_->jit_ker(&p);
+        kernel_->jit_ker_(&p);
         nd_iterator_step(n, jcp.bs, h, jcp.h, w, jcp.w);
       }
     }

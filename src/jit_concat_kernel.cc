@@ -29,7 +29,7 @@ using namespace Xbyak;
 
 void jit_concat_kernel::compute_one_input_with_zmm() {
   Label l_next_block;
-  int shift_c = jcp.typesize * jcp.block;
+  int shift_c = jcp_.typesize * jcp_.block;
   mov(reg_nb, dword[reg_ptr_nb_ic]);
   mov(reg_ptr_src_i, ptr[reg_ptr_src]);
   L(l_next_block);
@@ -38,10 +38,10 @@ void jit_concat_kernel::compute_one_input_with_zmm() {
     auto dst_addr = EVEX_compress_addr(reg_ptr_dst, 0);
     // load to src
     vmovups(zmm_src, src_addr);
-    if (jcp.with_relu) {
-      if (jcp.dt == memory::dtype::s32) {
+    if (jcp_.with_relu) {
+      if (jcp_.dt == memory::dtype::s32) {
         vpmaxsw(zmm_src, zmm_src, zmm_zero);
-      } else if (jcp.dt == memory::dtype::f32) {
+      } else if (jcp_.dt == memory::dtype::f32) {
         vmaxps(zmm_src, zmm_zero, zmm_src);
       } else {  // s8 or u8
         vpmaxsb(zmm_src, zmm_src, zmm_zero);
@@ -59,7 +59,7 @@ void jit_concat_kernel::compute_one_input_with_zmm() {
 
 void jit_concat_kernel::compute_one_input_with_ymm() {
   Label l_next_block;
-  int shift_c = jcp.typesize * jcp.block;
+  int shift_c = jcp_.typesize * jcp_.block;
   mov(reg_nb, dword[reg_ptr_nb_ic]);
   mov(reg_ptr_src_i, ptr[reg_ptr_src]);
   L(l_next_block);
@@ -68,10 +68,10 @@ void jit_concat_kernel::compute_one_input_with_ymm() {
     auto dst_addr = EVEX_compress_addr(reg_ptr_dst, 0);
     // load to src
     vmovups(ymm_src, src_addr);
-    if (jcp.with_relu) {
-      if (jcp.dt == memory::dtype::s32) {
+    if (jcp_.with_relu) {
+      if (jcp_.dt == memory::dtype::s32) {
         vpmaxsw(ymm_src, ymm_src, ymm_zero);
-      } else if (jcp.dt == memory::dtype::f32) {
+      } else if (jcp_.dt == memory::dtype::f32) {
         vmaxps(ymm_src, ymm_zero, ymm_src);
       } else {  // s8 or u8
         vpmaxsb(ymm_src, ymm_src, ymm_zero);
@@ -89,7 +89,7 @@ void jit_concat_kernel::compute_one_input_with_ymm() {
 
 void jit_concat_kernel::compute_one_input_with_xmm() {
   Label l_next_block;
-  int shift_c = jcp.typesize * jcp.block;
+  int shift_c = jcp_.typesize * jcp_.block;
   mov(reg_nb, dword[reg_ptr_nb_ic]);
   mov(reg_ptr_src_i, ptr[reg_ptr_src]);
   L(l_next_block);
@@ -98,10 +98,10 @@ void jit_concat_kernel::compute_one_input_with_xmm() {
     auto dst_addr = EVEX_compress_addr(reg_ptr_dst, 0);
     // load to src
     vmovups(xmm_src, src_addr);
-    if (jcp.with_relu) {
-      if (jcp.dt == memory::dtype::s32) {
+    if (jcp_.with_relu) {
+      if (jcp_.dt == memory::dtype::s32) {
         vpmaxsw(xmm_src, xmm_src, xmm_zero);
-      } else if (jcp.dt == memory::dtype::f32) {
+      } else if (jcp_.dt == memory::dtype::f32) {
         vmaxps(xmm_src, xmm_zero, xmm_src);
       } else {  // s8 or u8
         vpmaxsb(xmm_src, xmm_src, xmm_zero);
@@ -126,7 +126,7 @@ void jit_concat_kernel::compute_with_zmm() {
     add(reg_ptr_src, sizeof(void*));  // move 64bits
     add(reg_ptr_nb_ic, sizeof(int));  // move one int
     inc(reg_ninputs);
-    cmp(reg_ninputs, jcp.n_inputs);
+    cmp(reg_ninputs, jcp_.n_inputs);
     jl(l_next_input, T_NEAR);
   }
 }
@@ -140,7 +140,7 @@ void jit_concat_kernel::compute_with_ymm() {
     add(reg_ptr_src, sizeof(void*));  // move 64bits
     add(reg_ptr_nb_ic, sizeof(int));  // move one int
     inc(reg_ninputs);
-    cmp(reg_ninputs, jcp.n_inputs);
+    cmp(reg_ninputs, jcp_.n_inputs);
     jl(l_next_input, T_NEAR);
   }
 }
@@ -154,7 +154,7 @@ void jit_concat_kernel::compute_with_xmm() {
     add(reg_ptr_src, sizeof(void*));  // move 64bits
     add(reg_ptr_nb_ic, sizeof(int));  // move one int
     inc(reg_ninputs);
-    cmp(reg_ninputs, jcp.n_inputs);
+    cmp(reg_ninputs, jcp_.n_inputs);
     jl(l_next_input, T_NEAR);
   }
 }
@@ -166,31 +166,31 @@ void jit_concat_kernel::generate() {
   mov(reg_ptr_nb_ic, ptr[param + GET_OFF(nb_ic)]);
   mov(reg_ptr_dst, ptr[param + GET_OFF(dst)]);
 
-  vpxord(xmm_zero, xmm_zero, xmm_zero);
-  vpxord(ymm_zero, ymm_zero, ymm_zero);
-  vpxord(zmm_zero, zmm_zero, zmm_zero);
-
   // one kernel move one dst oc from all srcs
-  mov(reg_bitsize, jcp.bits_size);
+  mov(reg_bitsize, jcp_.bits_size);
   Label l_use_ymm, l_use_xmm, l_ret;
   cmp(reg_bitsize, 512);
   jne(l_use_ymm, T_NEAR);
+  vpxord(zmm_zero, zmm_zero, zmm_zero);
   compute_with_zmm();
   jmp(l_ret, T_NEAR);
 
   L(l_use_ymm);
   cmp(reg_bitsize, 256);
   jne(l_use_xmm, T_NEAR);
+  vpxord(ymm_zero, ymm_zero, ymm_zero);
   compute_with_ymm();
   jmp(l_ret, T_NEAR);
 
   L(l_use_xmm);
+  vpxord(xmm_zero, xmm_zero, xmm_zero);
   compute_with_xmm();
 
   L(l_ret);
   postamble();
 }
 bool jit_concat_kernel::init_conf(
+    jit_concat_conf_t& jcp,
     const std::vector<std::unique_ptr<memory>>& srcs,
     const std::unique_ptr<memory>& dst,
     bool post_relu) {
@@ -209,7 +209,10 @@ bool jit_concat_kernel::init_conf(
     // only s8, u8, s32, f32
     return false;
   }
-  check_eq(dst->dim_format(), memory::format::nhwc);
+  if (!util::one_of(dst->dim_format(), memory::format::nhwc)) {
+    // only support nhwc yet
+    return false;
+  }
 
   // when 4bytes, work on 16x, 8x or 4x channels
   // when 1byte, work on 64x, 32x, 16x channels
@@ -235,8 +238,14 @@ bool jit_concat_kernel::init_conf(
   }
 
   for (size_t i = 0; i < srcs.size(); ++i) {
-    check_eq(srcs[i]->dim_format(), memory::format::nhwc);
-    check_eq(srcs[i]->data_type(), jcp.dt);
+    if (srcs[i]->dim_format() != dst->dim_format()) {
+      // all format should be equal
+      return false;
+    }
+    if (srcs[i]->data_type() != jcp.dt) {
+      // all data type must equals
+      return false;
+    }
     if (srcs[i]->actual_dims()[3] % jcp.block != 0) {
       return false;
     }
