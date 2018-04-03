@@ -41,6 +41,11 @@ struct jit_concat_kernel : public jit_generator {
   void (*jit_ker_)(jit_concat_call_s*);
 
 private:
+  enum {
+    USE_ZMM = 512,
+    USE_YMM = 256,
+    USE_XMM = 128,
+  };
   using reg64_t = const Xbyak::Reg64;
   using reg32_t = const Xbyak::Reg32;
   using zmm_t = const Xbyak::Zmm;
@@ -53,7 +58,6 @@ private:
   reg64_t reg_ptr_dst = r10;
   reg64_t reg_ptr_src_i = r11;
   reg64_t reg_ninputs = r12;
-  reg64_t reg_bitsize = r13;
   reg32_t reg_nb = r15d;
 
   xmm_t xmm_src = xmm_t(30);
@@ -63,12 +67,7 @@ private:
   ymm_t ymm_zero = ymm_t(31);
   zmm_t zmm_zero = zmm_t(31);
 
-  void compute_with_zmm();
-  void compute_with_ymm();
-  void compute_with_xmm();
-  void compute_one_input_with_zmm();
-  void compute_one_input_with_ymm();
-  void compute_one_input_with_xmm();
+  void compute_one_input();
   void generate();
 };
 }
