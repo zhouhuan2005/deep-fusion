@@ -154,6 +154,6 @@ bool jit_dump_code();
 }
 }
 
-void *malloc(size_t size, int alignment = 64);
+void *aligned_malloc(size_t size, int alignment = 64);
 void free(void *p);
 }

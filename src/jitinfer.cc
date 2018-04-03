@@ -60,7 +60,7 @@ memory::~memory() { free(data_); }
 
 void memory::allocate_buffer(int alignment) {
   assert(buffer_size() > 0);
-  data_ = malloc(buffer_size(), alignment);
+  data_ = aligned_malloc(buffer_size(), alignment);
   assert(data_ != NULL);
 }
 

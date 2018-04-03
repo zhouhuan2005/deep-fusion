@@ -18,7 +18,7 @@
 
 namespace jitinfer {
 
-void *malloc(size_t size, int alignment) {
+void *aligned_malloc(size_t size, int alignment) {
   void *ptr;
 
 #ifdef _WIN32
@@ -91,7 +91,7 @@ bool profiling_time() {
 static bool dump_jit_code = false;
 // when need dump jit code
 // 1. cmake -DCMAKE_BUILD_TYPE=DEBUG
-// 2. export JITINFER_DUMP_CODE
+// 2. export JITINFER_DUMP_CODE=1
 bool jit_dump_code() {
   static bool initialized = false;
   if (!initialized) {

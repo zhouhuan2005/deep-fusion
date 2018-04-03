@@ -42,9 +42,9 @@ public:
     const int num_srcs = jcp.n_inputs;
     assert(num_srcs == srcs.size());
 
-    srcs_data_ = (const dtype **)malloc(num_srcs * sizeof(dtype *), 64);
-    ic_ = (int *)malloc(num_srcs * sizeof(int), 64);
-    nb_ic_ = (int *)malloc(num_srcs * sizeof(int), 64);
+    srcs_data_ = (const dtype **)aligned_malloc(num_srcs * sizeof(dtype *));
+    ic_ = (int *)aligned_malloc(num_srcs * sizeof(int));
+    nb_ic_ = (int *)aligned_malloc(num_srcs * sizeof(int));
 
     for (int i = 0; i < num_srcs; ++i) {
       auto dim = srcs[i]->actual_dims();
@@ -60,7 +60,7 @@ public:
     const int nthreads = omp_get_max_threads();
     debug("Concat: Max OMP threads: %d", nthreads);
     src_with_offset_ =
-        (const dtype **)malloc(nthreads * num_srcs * sizeof(dtype *), 64);
+        (const dtype **)aligned_malloc(nthreads * num_srcs * sizeof(dtype *));
   }
 
   ~op_concat() {
