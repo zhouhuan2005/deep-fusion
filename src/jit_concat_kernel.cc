@@ -37,7 +37,6 @@ void jit_concat_kernel::compute_one_input() {
     auto src_addr = EVEX_compress_addr(reg_ptr_src_i, 0);
     auto dst_addr = EVEX_compress_addr(reg_ptr_dst, 0);
     // load, relu and store
-    // TODO: use template to simplify
     switch (jcp_.bits_size) {
       case USE_ZMM:
         vmovups(zmm_src, src_addr);
@@ -154,7 +153,6 @@ bool jit_concat_kernel::init_conf(
 
   // when 4bytes, work on 16x, 8x or 4x channels
   // when 1byte, work on 64x, 32x, 16x channels
-  // fine the workable block.
   std::vector<int> blocks;
   if (jcp.typesize == 1) {
     blocks = {64, 32, 16};
@@ -170,7 +168,8 @@ bool jit_concat_kernel::init_conf(
         break;
       }
     }
-    if (i == srcs.size()) {  // this block is dividable by all inputs channels
+    if (i == srcs.size()) {
+      // this block can be dividable by all inputs channels, so break
       break;
     }
   }

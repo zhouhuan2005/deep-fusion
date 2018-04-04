@@ -46,5 +46,22 @@ void clear_cache() { dummy_mem.clear_cache(); }
 // hot cache, do nothing
 void clear_cache() { ; }
 #endif
+
+const char* dtype2str(memory::dtype dt) {
+  using dtype = memory::dtype;
+  switch (dt) {
+    case dtype::f32:
+      return "f32";
+    case dtype::s32:
+      return "s32";
+    case dtype::s8:
+      return "s8";
+    case dtype::u8:
+      return "u8";
+    default:
+      error_and_exit("Unknow data type");
+      return NULL;
+  }
+}
 }
 }

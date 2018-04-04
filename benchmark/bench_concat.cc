@@ -146,7 +146,6 @@ void bench_jitinfer_concat(
   double sum_concat = 0;
   for (auto i = 0; i < iter; ++i) {
     jitinfer::util::clear_cache();
-
     auto s1 = jitinfer::util::timer::get_current_ms();
     c->submit();
     auto s2 = jitinfer::util::timer::get_current_ms();
@@ -173,8 +172,8 @@ void bench_both(const bench_params& p,
   dst_dims[3] = srcs_dims[0][3];
   std::ostringstream oss;
   info("==========================================");
-  oss << "Benchmark with data type: " << dt
-      << (post_relu ? " with ReLU" : " without ReLU");
+  oss << "Benchmark with data type " << jitinfer::util::dtype2str(dt)
+      << (post_relu ? ", with ReLU" : " without ReLU");
   oss << "\nData sizes: In";
   for (size_t i = 0; i < srcs_dims.size(); i++) {
     const auto& dims = srcs_dims[i];
@@ -204,8 +203,9 @@ void bench_both(const bench_params& p,
 int main(int argc, char** argv) {
   size_t param_sz = sizeof(default_cases) / sizeof(bench_params);
   bench_params* pm = default_cases;
-  jitinfer::memory::dtype dtypes[] = {jitinfer::memory::dtype::s32,
-                                      jitinfer::memory::dtype::s8};
+  jitinfer::memory::dtype dtypes[] = {jitinfer::memory::dtype::s8,
+                                      jitinfer::memory::dtype::s32,
+                                      jitinfer::memory::dtype::f32};
   size_t dt_sz = sizeof(dtypes) / sizeof(jitinfer::memory::dtype);
   if (argc > 1) {
     // TODO: enable get user param and dtype from outside
@@ -216,8 +216,8 @@ int main(int argc, char** argv) {
   }
 
   for (size_t i = 0; i < param_sz; ++i) {
-    for (size_t j = 0; j < dt_sz; ++j) {
-      for (auto post_relu : {true, false}) {
+    for (auto post_relu : {true, false}) {
+      for (size_t j = 0; j < dt_sz; ++j) {
         bench_both(pm[i], dtypes[j], post_relu);
       }
     }

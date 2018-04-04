@@ -36,5 +36,7 @@ private:
   DISABLE_COPY_AND_ASSIGN(dummy_memory);
 };
 #endif
+
+const char* dtype2str(memory::dtype dt);
 }
 }
