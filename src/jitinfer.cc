@@ -72,13 +72,15 @@ size_t memory::buffer_size() { return size() * util::dtype_size(dt_); }
 
 void op::submit() {
 #ifdef WITH_VERBOSE
-  auto t_start = util::timer::get_current_ms();
+  double t_start = 0;
+  if (util::env::profiling_time()) {
+    t_start = util::timer::get_current_ms();
+  }
 #endif
   infer();
 #ifdef WITH_VERBOSE
-  auto t_stop = util::timer::get_current_ms();
   if (util::env::profiling_time()) {
-    info("%s infer %f", this->name(), t_stop - t_start);
+    info("%s infer %f", this->name(), util::timer::get_current_ms() - t_start);
   }
 #endif
 }
