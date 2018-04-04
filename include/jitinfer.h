@@ -67,7 +67,7 @@ public:
   explicit memory(const nchw_dims &dm,
                   const format fmt,
                   const dtype dt,
-                  int alignment = 64);
+                  int alignment = 4096);
   ~memory();
   size_t size();
   size_t buffer_size();

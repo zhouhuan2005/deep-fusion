@@ -26,7 +26,7 @@ dummy_memory::dummy_memory(size_t num_bytes) {
   int max_nthr = omp_get_max_threads();
   debug("Max OMP threads: %d", max_nthr);
   size_ = num_bytes * max_nthr;
-  p_ = (unsigned char*)aligned_malloc(size_);
+  p_ = (unsigned char*)aligned_malloc(size_, 64);
 }
 dummy_memory::~dummy_memory() { free(p_); }
 void dummy_memory::clear_cache() {
