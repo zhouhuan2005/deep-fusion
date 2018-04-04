@@ -32,10 +32,6 @@ set(util_jitinfer_cc
 add_library(${TARGET_NAME} SHARED ${HEADERS} ${SOURCES} ${util_jitinfer_cc})
 add_dependencies(${TARGET_NAME} ${external_project_dependencies})
 
-# TODO add jitlib to rpath
-#set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}" "${MKLML_ROOT}/lib")
-#target_link_libraries(${TARGET_NAME} ${${TARGET_NAME}_LINKER_LIBS} ${EXTRA_LIBS})
-
 target_link_libraries(${TARGET_NAME} "-L${MKLML_LIB_DIR} -liomp5 -Wl,--as-needed")
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 11)
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)

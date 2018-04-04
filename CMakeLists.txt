@@ -68,6 +68,8 @@ option(WITH_COLD_CACHE    "Benchmark with cold cache method"      ${WITH_BENCHMA
 # TODO: enable it if necessary
 # option(WITH_GLOG          "Compile with GLOG and GFLAG"                       OFF)
 ########################################################################################
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 include(system)              # gcc flags
 include(simd)                # check if AVX512 or VNNI is supported
 include(external/mklml)      # download mklml package and use iomp for jitinfer, use others for mkldnn
