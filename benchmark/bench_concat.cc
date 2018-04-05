@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
+#include <gflags/gflags.h>
 #include <mkldnn.hpp>
 #include <sstream>
 #include "jitinfer.h"
@@ -21,19 +22,20 @@
 #include "util_benchmark.h"
 #include "util_mkldnn.h"
 
-static int burning_iter = 50;
-static int iter = 100;
+DEFINE_int32(burning_iter, 50, "Burning iterations");
+DEFINE_int32(iter, 100, "Iterations for average");
+DEFINE_int32(n, 4, "Number of images (==batch size), 'n' in 'nchw'.");
+DEFINE_int32(h, 100, "Height of images, 'h' in 'nchw'");
+DEFINE_int32(w, 100, "Width of images, 'w' in 'nchw'");
+DEFINE_string(c, "", "Input channels, for example, -c=64,64,32");
+DEFINE_string(dtype, "s8", "Data type");
+DEFINE_bool(post_relu, true, "Post ReLU after Concat");
+
 static mkldnn::engine eng = mkldnn::engine(mkldnn::engine::cpu, 0);
 
 struct bench_params {
   // @note: dims always write as nchw, but acutal run format is nhwc
   std::vector<jitinfer::memory::nchw_dims> srcs_dims;
-};
-
-static bench_params default_cases[] = {
-    {{{4, 128, 244, 244}, {4, 256, 244, 244}}},  // 64x
-    {{{4, 64, 64, 64}, {4, 96, 64, 64}}},        // 32x
-    {{{4, 16, 9, 9}, {4, 64, 9, 9}}}             // 16x
 };
 
 void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
@@ -82,7 +84,7 @@ void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
     pp_relu.push_back(*fwd_relu);
   }
 
-  for (auto i = 0; i < burning_iter; ++i) {
+  for (auto i = 0; i < FLAGS_burning_iter; ++i) {
     jitinfer::util::clear_cache();
     stream(stream::kind::eager).submit(pp_concat).wait();
     if (post_relu) {
@@ -94,7 +96,7 @@ void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
   // cal time
   double sum_concat = 0;
   double sum_relu = 0;
-  for (auto i = 0; i < iter; ++i) {
+  for (auto i = 0; i < FLAGS_iter; ++i) {
     jitinfer::util::clear_cache();
     auto s1 = jitinfer::util::timer::get_current_ms();
     stream(stream::kind::eager).submit(pp_concat).wait();
@@ -108,8 +110,8 @@ void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
     jitinfer::util::clear_cache();
   }
 
-  auto avg_concat = sum_concat / (double)iter;
-  auto avg_relu = sum_relu / (double)iter;
+  auto avg_concat = sum_concat / (double)FLAGS_iter;
+  auto avg_relu = sum_relu / (double)FLAGS_iter;
   std::ostringstream oss;
   oss << "MKL-DNN Concat" << (post_relu ? " + ReLU" : "") << " avg time ("
       << avg_concat;
@@ -137,14 +139,14 @@ void bench_jitinfer_concat(
 
   auto c = concat(srcs, dst, post_relu);
 
-  for (auto i = 0; i < burning_iter; ++i) {
+  for (auto i = 0; i < FLAGS_burning_iter; ++i) {
     jitinfer::util::clear_cache();
     c->submit();
     jitinfer::util::clear_cache();
   }
 
   double sum_concat = 0;
-  for (auto i = 0; i < iter; ++i) {
+  for (auto i = 0; i < FLAGS_iter; ++i) {
     jitinfer::util::clear_cache();
     auto s1 = jitinfer::util::timer::get_current_ms();
     c->submit();
@@ -155,7 +157,7 @@ void bench_jitinfer_concat(
 
   std::ostringstream oss;
   oss << "JitInfer Concat" << (post_relu ? "_ReLU" : "")
-      << " avg time: " << sum_concat / (double)iter << " ms";
+      << " avg time: " << sum_concat / (double)FLAGS_iter << " ms";
   info("%s", oss.str().c_str());
 }
 
@@ -201,24 +203,42 @@ void bench_both(const bench_params& p,
 }
 
 int main(int argc, char** argv) {
-  size_t param_sz = sizeof(default_cases) / sizeof(bench_params);
-  bench_params* pm = default_cases;
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  // only run if given some input channels
+  // for example:
+  // bench_concat -n 3 -c 16,16,64 -h 4 -w 6 -dtype s8 -post_relu
+  if (!FLAGS_c.empty()) {
+    auto ics = jitinfer::util::split(FLAGS_c);
+    bench_params test_case;
+    test_case.srcs_dims.resize(ics.size());
+    for (size_t i = 0; i < ics.size(); ++i) {
+      auto& dims = test_case.srcs_dims[i];
+      // always load input dims as nchw format
+      dims[0] = FLAGS_n;
+      dims[1] = std::stoi(ics[i]);
+      dims[2] = FLAGS_h;
+      dims[3] = FLAGS_w;
+    }
+    bench_both(
+        test_case, jitinfer::util::str2dtype(FLAGS_dtype), FLAGS_post_relu);
+    return 0;
+  }
+
+  // nothing input, then run some default cases
+  bench_params default_cases[] = {
+      {{{4, 128, 244, 244}, {4, 256, 244, 244}}},  // 64x
+      {{{4, 64, 64, 64}, {4, 96, 64, 64}}},        // 32x
+      {{{4, 16, 9, 9}, {4, 64, 9, 9}}}             // 16x
+  };
   jitinfer::memory::dtype dtypes[] = {jitinfer::memory::dtype::s8,
                                       jitinfer::memory::dtype::s32,
                                       jitinfer::memory::dtype::f32};
+  size_t param_sz = sizeof(default_cases) / sizeof(bench_params);
   size_t dt_sz = sizeof(dtypes) / sizeof(jitinfer::memory::dtype);
-  if (argc > 1) {
-    // TODO: enable get user param and dtype from outside
-    // pm = ;
-    // dtypes[0] = ;
-    param_sz = 1;
-    dt_sz = 1;
-  }
-
   for (size_t i = 0; i < param_sz; ++i) {
     for (auto post_relu : {true, false}) {
       for (size_t j = 0; j < dt_sz; ++j) {
-        bench_both(pm[i], dtypes[j], post_relu);
+        bench_both(default_cases[i], dtypes[j], post_relu);
       }
     }
   }

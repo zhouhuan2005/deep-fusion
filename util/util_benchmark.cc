@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 #include "util_benchmark.h"
+#include <sstream>
 #include "log.h"
 #include "omp_thread.h"
 
@@ -62,6 +63,34 @@ const char* dtype2str(memory::dtype dt) {
       error_and_exit("Unknow data type");
       return NULL;
   }
+}
+
+memory::dtype str2dtype(const std::string& str) {
+  using dtype = memory::dtype;
+  if (str == "f32") {
+    return dtype::f32;
+  } else if (str == "s32") {
+    return dtype::s32;
+  } else if (str == "s8") {
+    return dtype::s8;
+  } else if (str == "u8") {
+    return dtype::u8;
+  } else {
+    error_and_exit("Unknow data type %s", str.c_str());
+    return dtype::f32;
+  }
+}
+
+memory::dtype str2dtype(const char* str) { return str2dtype(std::string(str)); }
+
+std::vector<std::string> split(const std::string& s, char delimiter) {
+  std::stringstream ss(s);
+  std::string item;
+  std::vector<std::string> tokens;
+  while (std::getline(ss, item, delimiter)) {
+    tokens.push_back(item);
+  }
+  return tokens;
 }
 }
 }

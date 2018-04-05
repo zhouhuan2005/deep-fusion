@@ -128,10 +128,12 @@ TEST_P(test_concat_u8, TestsConcat) {}
 #define BASIC_TEST_CASES                                                  \
   test_concat_params{{{2, 64, 1, 1}, {2, 96, 1, 1}}, {2, 160, 1, 1}},     \
       test_concat_params{{{2, 64, 4, 4}, {2, 32, 4, 4}}, {2, 96, 4, 4}},  \
-      test_concat_params{{{2, 256, 16, 16}, {2, 256, 16, 16}},            \
-                         {2, 512, 16, 16}},                               \
       test_concat_params{{{2, 16, 8, 8}, {2, 32, 8, 8}}, {2, 48, 8, 8}},  \
       test_concat_params{{{2, 32, 9, 9}, {2, 96, 9, 9}}, {2, 128, 9, 9}}, \
+      test_concat_params{{{2, 16, 3, 3}, {2, 32, 3, 3}, {2, 64, 3, 3}},   \
+                         {2, 112, 3, 3}},                                 \
+      test_concat_params{{{2, 256, 16, 16}, {2, 256, 16, 16}},            \
+                         {2, 512, 16, 16}},                               \
       test_concat_params {                                                \
     {{4, 128, 14, 14}, {4, 256, 14, 14}}, { 4, 384, 14, 14 }              \
   }

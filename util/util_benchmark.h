@@ -38,5 +38,8 @@ private:
 #endif
 
 const char* dtype2str(memory::dtype dt);
+memory::dtype str2dtype(const std::string& str);
+memory::dtype str2dtype(const char* str);
+std::vector<std::string> split(const std::string& s, char delimiter = ',');
 }
 }
