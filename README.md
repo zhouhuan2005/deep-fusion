@@ -15,6 +15,7 @@ It will download, compile and install all dependencies, including:
 - [Intel(R) MKL-DNN](https://github.com/intel/mkl-dnn), used for benchmark comparion and refernce in gtest.
 - [Intel(R) MKLML](https://github.com/intel/mkl-dnn/releases/download/v0.13/mklml_lnx_2018.0.2.20180127.tgz), used for Intel OpenMP library.
 - [gtest](https://github.com/google/googletest)
+- [gflags](https://github.com/gflags/gflags)
 
 ### Benchmark
 `cmake -DWITH_BENCHMARK=ON`, default is enabled. \

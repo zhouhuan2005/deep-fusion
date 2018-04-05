@@ -76,6 +76,7 @@ include(external/mklml)      # download mklml package and use iomp for jitinfer,
 include(external/mkldnn)     # download mkldnn for reference comparion
 include(external/xbyak)      # download xbyak
 include(external/gtest)      # download, build, install gtest
+include(external/gflags)     # download, build, install gflags, only used for benchmark command line
 
 if(NOT AVX512_FOUND)
   message(FATAL_ERROR "AVX512 is not found! Only support on AVX512 yet!")
