@@ -100,4 +100,27 @@ protected:
 std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>> &srcs,
                            std::unique_ptr<memory> &dst,
                            bool post_relu = false);
+
+// only conv
+std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
+                         const std::unique_ptr<memory> &wei,
+                         const std::unique_ptr<memory> &bia,
+                         std::array<int, 2> sz_kernel,
+                         std::array<int, 2> sz_stride,
+                         std::array<int, 2> sz_padding,
+                         std::unique_ptr<memory> &dst,
+                         bool relu_conv0 = false);
+
+// conv and fuse conv1x1_relu
+std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
+                         const std::unique_ptr<memory> &wei,
+                         const std::unique_ptr<memory> &bia,
+                         std::array<int, 2> sz_kernel,
+                         std::array<int, 2> sz_stride,
+                         std::array<int, 2> sz_padding,
+                         const std::unique_ptr<memory> &wei1x1,
+                         const std::unique_ptr<memory> &bia1x1,
+                         std::unique_ptr<memory> &dst,
+                         bool relu_conv0 = false,
+                         bool relu_conv1 = false);
 }

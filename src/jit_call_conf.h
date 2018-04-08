@@ -39,5 +39,42 @@ struct jit_concat_conf_t {
   int bits_size;  // 128, 256, 512 : xmm, ymm, zmm
   bool with_relu;
 };
+
+struct jit_conv_conf_t {
+  int bs;
+  int gp, ic, oc;
+  int ih, iw, oh, ow;
+  int l_pad, t_pad;
+  int r_pad, b_pad;
+  int kh, kw;
+  int sh, sw;
+  int oc_block;
+  int nb_oc_blocking;
+  /* conv 1x1*/
+  int oc1x1;
+  int oc1x1_block;
+  int nb_oc1x1;
+};
+
+struct jit_conv_call_s {
+  const void *src;
+  const void *dst; /* hack, non-const for forward */
+  const void *filt;
+  const void *bias;
+  const void *scales;
+  const void *acc_s32;
+
+  const void *wei1x1;
+  const void *bia1x1;
+  const void *acc1x1;
+  const void *out1x1;
+  const void *scales1x1;
+  size_t ocb3x3;
+
+  size_t kh_padding;
+  size_t kw_padding;
+  size_t channel;
+  size_t oc_blocks;
+};
 }
 }

@@ -16,11 +16,12 @@
  ******************************************************************************/
 #include "jitinfer.h"
 #include "op_concat.h"
+#include "op_conv.h"
 #include "util_jitinfer.h"
 
 namespace jitinfer {
 
-memory::dims nchw2format(const memory::nchw_dims& dm,
+memory::dims nchw2format(const memory::nchw_dims &dm,
                          const memory::format fmt) {
   using format = memory::format;
   memory::dims out;
@@ -47,7 +48,7 @@ memory::dims nchw2format(const memory::nchw_dims& dm,
   return out;
 }
 
-memory::memory(const nchw_dims& dm,
+memory::memory(const nchw_dims &dm,
                const format fmt,
                const dtype dt,
                int alignment)
@@ -85,8 +86,8 @@ void op::submit() {
 #endif
 }
 
-std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>>& srcs,
-                           std::unique_ptr<memory>& dst,
+std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>> &srcs,
+                           std::unique_ptr<memory> &dst,
                            bool post_relu) {
   switch (dst->data_type()) {
 #define CASE(tp)          \
@@ -101,5 +102,61 @@ std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>>& srcs,
       assert(!"bad data_type");
   }
   return nullptr;
+}
+
+std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
+                         const std::unique_ptr<memory> &wei,
+                         const std::unique_ptr<memory> &bia,
+                         std::array<int, 2> sz_kernel,
+                         std::array<int, 2> sz_stride,
+                         std::array<int, 2> sz_padding,
+                         const std::unique_ptr<memory> &wei1x1,
+                         const std::unique_ptr<memory> &bia1x1,
+                         std::unique_ptr<memory> &dst,
+                         bool relu_conv0,
+                         bool relu_conv1) {
+  switch (dst->data_type()) {
+#define CASE(tp)                                           \
+  case memory::dtype::tp:                                  \
+    return std::unique_ptr<op>(new op_conv<tp>(src,        \
+                                               wei,        \
+                                               bia,        \
+                                               sz_kernel,  \
+                                               sz_stride,  \
+                                               sz_padding, \
+                                               dst,        \
+                                               wei1x1,     \
+                                               bia1x1,     \
+                                               relu_conv0, \
+                                               relu_conv1))
+    CASE(f32);
+    CASE(s32);
+    CASE(s8);
+    CASE(u8);
+#undef CASE
+    default:
+      assert(!"bad data_type");
+  }
+  return nullptr;
+}
+
+std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
+                         const std::unique_ptr<memory> &wei,
+                         const std::unique_ptr<memory> &bia,
+                         std::array<int, 2> sz_kernel,
+                         std::array<int, 2> sz_stride,
+                         std::array<int, 2> sz_padding,
+                         std::unique_ptr<memory> &dst,
+                         bool relu_conv0) {
+  return conv(src,
+              wei,
+              bia,
+              sz_kernel,
+              sz_stride,
+              sz_padding,
+              nullptr,
+              nullptr,
+              dst,
+              relu_conv0);
 }
 }
