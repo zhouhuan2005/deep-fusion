@@ -35,7 +35,6 @@ struct jit_conv_kernel : public jit_generator {
                         const std::unique_ptr<memory> &src,
                         const std::unique_ptr<memory> &wei,
                         const std::unique_ptr<memory> &bia,
-                        std::array<int, 2> sz_kernel,
                         std::array<int, 2> sz_stride,
                         std::array<int, 2> sz_padding,
                         std::unique_ptr<memory> &dst,

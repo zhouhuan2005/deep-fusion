@@ -33,5 +33,12 @@ size_t dtype_size(memory::dtype dt) {
       return 0;
   }
 }
+
+int conv_output_size(int image, int kernel, int stride, int padding) {
+  return (image + 2 * padding - kernel) / stride + 1;
+}
+int pool_output_size(int image, int kernel, int stride, int padding) {
+  return (image + 2 * padding - kernel + stride - 1) / stride + 1;
+}
 }
 }

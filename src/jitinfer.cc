@@ -52,7 +52,7 @@ memory::memory(const nchw_dims &dm,
                const format fmt,
                const dtype dt,
                int alignment)
-    : fmt_(fmt), dt_(dt) {
+    : std_dims_(dm), fmt_(fmt), dt_(dt) {
   dims_ = nchw2format(dm, fmt);
   allocate_buffer(alignment);
 }
@@ -107,7 +107,6 @@ std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>> &srcs,
 std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          const std::unique_ptr<memory> &wei,
                          const std::unique_ptr<memory> &bia,
-                         std::array<int, 2> sz_kernel,
                          std::array<int, 2> sz_stride,
                          std::array<int, 2> sz_padding,
                          const std::unique_ptr<memory> &wei1x1,
@@ -121,7 +120,6 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
     return std::unique_ptr<op>(new op_conv<tp>(src,        \
                                                wei,        \
                                                bia,        \
-                                               sz_kernel,  \
                                                sz_stride,  \
                                                sz_padding, \
                                                dst,        \
@@ -143,20 +141,11 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
 std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          const std::unique_ptr<memory> &wei,
                          const std::unique_ptr<memory> &bia,
-                         std::array<int, 2> sz_kernel,
                          std::array<int, 2> sz_stride,
                          std::array<int, 2> sz_padding,
                          std::unique_ptr<memory> &dst,
                          bool conv0_relu) {
-  return conv(src,
-              wei,
-              bia,
-              sz_kernel,
-              sz_stride,
-              sz_padding,
-              nullptr,
-              nullptr,
-              dst,
-              conv0_relu);
+  return conv(
+      src, wei, bia, sz_stride, sz_padding, nullptr, nullptr, dst, conv0_relu);
 }
 }

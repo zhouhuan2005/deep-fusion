@@ -66,5 +66,8 @@ struct dtype2type<memory::dtype::u8> {
 };
 
 size_t dtype_size(memory::dtype dt);
+
+int conv_output_size(int image, int kernel, int stride, int padding);
+int pool_output_size(int image, int kernel, int stride, int padding);
 }
 }

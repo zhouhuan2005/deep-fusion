@@ -49,6 +49,7 @@ public:
     format_undef = 0,
     x,
     nchw,
+    oihw = nchw,
     nhwc,
     OIhw4i16o4i,
     gOIhw4i16o4i,
@@ -74,6 +75,7 @@ public:
   size_t size();
   size_t buffer_size();
   dims actual_dims() { return dims_; }
+  nchw_dims std_dims() { return std_dims_; }  // nchw or oihw
   dtype data_type() { return dt_; }
   format dim_format() { return fmt_; }
   void *data() { return data_; }
@@ -82,6 +84,7 @@ private:
   void allocate_buffer(int alignment);
   void *data_;
   dims dims_;
+  nchw_dims std_dims_;  // nchw or oihw
   format fmt_;
   dtype dt_;
 
@@ -107,7 +110,6 @@ std::unique_ptr<op> concat(const std::vector<std::unique_ptr<memory>> &srcs,
 std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          const std::unique_ptr<memory> &wei,
                          const std::unique_ptr<memory> &bia,
-                         std::array<int, 2> sz_kernel,
                          std::array<int, 2> sz_stride,
                          std::array<int, 2> sz_padding,
                          std::unique_ptr<memory> &dst,
@@ -117,7 +119,6 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
 std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          const std::unique_ptr<memory> &wei,
                          const std::unique_ptr<memory> &bia,
-                         std::array<int, 2> sz_kernel,
                          std::array<int, 2> sz_stride,
                          std::array<int, 2> sz_padding,
                          const std::unique_ptr<memory> &wei1x1,
