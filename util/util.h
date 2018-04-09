@@ -55,6 +55,16 @@ inline bool one_of(T val, P item, Args... item_others) {
 }
 
 template <typename T>
+inline bool all_true(T expr) {
+  return expr;
+}
+
+template <typename T, typename... Args>
+inline bool all_true(T expr, Args... others_expr) {
+  return expr && all_true(others_expr...);
+}
+
+template <typename T>
 void copy_array(T *dst, T *src, size_t sz) {
 // do not use memcpy, in case of memory aligment
 #pragma omp parallel for schedule(static)

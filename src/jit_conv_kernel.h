@@ -41,8 +41,8 @@ struct jit_conv_kernel : public jit_generator {
                         std::unique_ptr<memory> &dst,
                         const std::unique_ptr<memory> &wei1x1,
                         const std::unique_ptr<memory> &bia1x1,
-                        bool relu_conv0,
-                        bool relu_conv1);
+                        bool conv0_relu,
+                        bool conv1_relu);
 
   jit_conv_conf_t jcp_;
   void (*jit_ker_)(jit_conv_call_s *);

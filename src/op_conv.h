@@ -41,9 +41,9 @@ public:
                    std::unique_ptr<memory> &dst,
                    const std::unique_ptr<memory> &wei1x1 = nullptr,
                    const std::unique_ptr<memory> &bia1x1 = nullptr,
-                   bool relu_conv0 = false,
-                   bool relu_conv1 = false)
-      : op(), post_conv1x1_(wei1x1 != nullptr) {
+                   bool conv0_relu = false,
+                   bool conv1_relu = false)
+      : op(), fuse_conv1x1_(wei1x1 != nullptr) {
     jit::jit_conv_conf_t conf;
     if (!init_conf(conf,
                    src,
@@ -55,8 +55,8 @@ public:
                    dst,
                    wei1x1,
                    bia1x1,
-                   relu_conv0,
-                   relu_conv1)) {
+                   conv0_relu,
+                   conv1_relu)) {
       error_and_exit("Init Conv op failed!");
     }
 
@@ -90,31 +90,17 @@ protected:
                  std::unique_ptr<memory> &dst,
                  const std::unique_ptr<memory> &wei1x1,
                  const std::unique_ptr<memory> &bia1x1,
-                 bool relu_conv0,
-                 bool relu_conv1) {
-    // TODO: check size reasonable, dtype acceptable
-    return jit::jit_conv_kernel::init_conf(conf,
-                                           src,
-                                           wei,
-                                           bia,
-                                           sz_kernel,
-                                           sz_stride,
-                                           sz_padding,
-                                           dst,
-                                           wei1x1,
-                                           bia1x1,
-                                           relu_conv0,
-                                           relu_conv1);
-  }
+                 bool conv0_relu,
+                 bool conv1_relu);
   void infer() override;
   const char *name() { return "conv"; }
 
 private:
-  bool post_conv1x1_;
+  bool fuse_conv1x1_;
   jit::jit_conv_kernel *kernel_;
   size_t ws_per_thread_;
-  acc_data_t *ws_;
   size_t ws1x1_per_thread_;
+  acc_data_t *ws_;
   acc_data_t *ws1x1_;
 };
 }

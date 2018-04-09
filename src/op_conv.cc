@@ -20,10 +20,50 @@
 namespace jitinfer {
 
 template <typename dst_data_t>
+bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
+                                    const std::unique_ptr<memory> &src,
+                                    const std::unique_ptr<memory> &wei,
+                                    const std::unique_ptr<memory> &bia,
+                                    std::array<int, 2> sz_kernel,
+                                    std::array<int, 2> sz_stride,
+                                    std::array<int, 2> sz_padding,
+                                    std::unique_ptr<memory> &dst,
+                                    const std::unique_ptr<memory> &wei1x1,
+                                    const std::unique_ptr<memory> &bia1x1,
+                                    bool conv0_relu,
+                                    bool conv1_relu) {
+  // TODO: check size reasonable
+  using namespace util;
+  if (!all_true(
+          src->data_type() == memory::dtype::u8,
+          wei->data_type() == memory::dtype::s8,
+          dst->data_type() == type2dtype<dst_data_t>::dtype,
+          bia == nullptr || bia->data_type() == memory::dtype::s32,
+          wei1x1 == nullptr || wei1x1->data_type() == memory::dtype::s8,
+          bia1x1 == nullptr || bia1x1->data_type() == memory::dtype::s32)) {
+    info("Data type do not match");
+    return false;
+  }
+
+  return jit::jit_conv_kernel::init_conf(conf,
+                                         src,
+                                         wei,
+                                         bia,
+                                         sz_kernel,
+                                         sz_stride,
+                                         sz_padding,
+                                         dst,
+                                         wei1x1,
+                                         bia1x1,
+                                         conv0_relu,
+                                         conv1_relu);
+}
+
+template <typename dst_data_t>
 void op_conv<dst_data_t>::infer() {
   using namespace util;
   const auto &jcp = kernel_->jcp_;
-  if (post_conv1x1_) {
+  if (fuse_conv1x1_) {
     ;
   } else {
     ;

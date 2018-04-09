@@ -53,7 +53,8 @@ struct jit_conv_conf_t {
   /* conv 1x1*/
   int oc1x1;
   int oc1x1_block;
-  int nb_oc1x1;
+  int nb_oc1x1_blocking;
+  bool fuse_conv1x1;
 };
 
 struct jit_conv_call_s {

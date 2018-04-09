@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 #include "jit_conv_kernel.h"
+#include "log.h"
 #include "util_jitinfer.h"
 
 #define GET_OFF(field) offsetof(jit_conv_call_s, field)
@@ -39,9 +40,24 @@ bool jit_conv_kernel::init_conf(jit_conv_conf_t &jcp,
                                 std::unique_ptr<memory> &dst,
                                 const std::unique_ptr<memory> &wei1x1,
                                 const std::unique_ptr<memory> &bia1x1,
-                                bool relu_conv0,
-                                bool relu_conv1) {
+                                bool conv0_relu,
+                                bool conv1_relu) {
+  using namespace util;
   jcp = jitinfer::util::zero<decltype(jcp)>();
+  if (!all_true(one_of(src->dim_format(), memory::format::nhwc),
+                one_of(dst->dim_format(), memory::format::nhwc),
+                one_of(wei->dim_format(),
+                       memory::format::OIhw4i16o4i,
+                       memory::format::gOIhw4i16o4i),
+                bia == nullptr || one_of(bia->dim_format(), memory::format::x),
+                wei1x1 == nullptr || one_of(wei1x1->dim_format(),
+                                            memory::format::OIhw4i16o4i,
+                                            memory::format::gOIhw4i16o4i),
+                bia1x1 == nullptr ||
+                    one_of(bia1x1->dim_format(), memory::format::x))) {
+    info("Format do not match");
+    return false;
+  }
 
   return true;
 }

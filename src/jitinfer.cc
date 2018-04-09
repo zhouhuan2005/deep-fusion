@@ -113,8 +113,8 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          const std::unique_ptr<memory> &wei1x1,
                          const std::unique_ptr<memory> &bia1x1,
                          std::unique_ptr<memory> &dst,
-                         bool relu_conv0,
-                         bool relu_conv1) {
+                         bool conv0_relu,
+                         bool conv1_relu) {
   switch (dst->data_type()) {
 #define CASE(tp)                                           \
   case memory::dtype::tp:                                  \
@@ -127,8 +127,8 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                                                dst,        \
                                                wei1x1,     \
                                                bia1x1,     \
-                                               relu_conv0, \
-                                               relu_conv1))
+                                               conv0_relu, \
+                                               conv1_relu))
     CASE(f32);
     CASE(s32);
     CASE(s8);
@@ -147,7 +147,7 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          std::array<int, 2> sz_stride,
                          std::array<int, 2> sz_padding,
                          std::unique_ptr<memory> &dst,
-                         bool relu_conv0) {
+                         bool conv0_relu) {
   return conv(src,
               wei,
               bia,
@@ -157,6 +157,6 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
               nullptr,
               nullptr,
               dst,
-              relu_conv0);
+              conv0_relu);
 }
 }

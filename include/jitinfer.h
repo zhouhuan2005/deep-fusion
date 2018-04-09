@@ -50,6 +50,8 @@ public:
     x,
     nchw,
     nhwc,
+    OIhw4i16o4i,
+    gOIhw4i16o4i,
   };
   typedef std::vector<int> dims;
   typedef std::array<int, 4> nchw_dims;
@@ -109,7 +111,7 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          std::array<int, 2> sz_stride,
                          std::array<int, 2> sz_padding,
                          std::unique_ptr<memory> &dst,
-                         bool relu_conv0 = false);
+                         bool conv0_relu = false);
 
 // conv and fuse conv1x1_relu
 std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
@@ -121,6 +123,6 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          const std::unique_ptr<memory> &wei1x1,
                          const std::unique_ptr<memory> &bia1x1,
                          std::unique_ptr<memory> &dst,
-                         bool relu_conv0 = false,
-                         bool relu_conv1 = false);
+                         bool conv0_relu = false,
+                         bool conv1_relu = false);
 }
