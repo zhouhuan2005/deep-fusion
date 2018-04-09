@@ -44,17 +44,31 @@ struct jit_conv_conf_t {
   int bs;
   int gp, ic, oc;
   int ih, iw, oh, ow;
-  int l_pad, t_pad;
-  int r_pad, b_pad;
+  int ph, pw;
   int kh, kw;
   int sh, sw;
-  int oc_block;
-  int nb_oc_blocking;
+  int ic_block, oc_block;
+  int nb_ic, nb_oc;
+  // @note: nc_ic==(nb_ic_blocking * ic_chunk)
+  int nb_ic_blocking, nb_oc_blocking;
+  int ur_w, ur_w_tail;
+  int typesize_in;
+  int typesize_out;
+  int typesize_acc;
+  int typesize_conv0_bia;
+  int typesize_conv1_bia;
+  memory::dtype dst_dt, conv0_bias_dt, conv1_bias_dt;
   /* conv 1x1*/
   int oc1x1;
   int oc1x1_block;
-  int nb_oc1x1_blocking;
+  int nb_oc1x1;
   bool fuse_conv1x1;
+  bool conv0_with_relu;
+  bool conv1_with_relu;
+  bool conv0_with_bias;
+  bool conv1_with_bias;
+  bool conv0_multi_oc_scale;  // whether use multi channel to scale oc
+  bool conv1_multi_oc_scale;
 };
 
 struct jit_conv_call_s {

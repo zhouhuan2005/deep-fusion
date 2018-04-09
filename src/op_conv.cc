@@ -20,6 +20,17 @@
 namespace jitinfer {
 
 template <typename dst_data_t>
+void op_conv<dst_data_t>::infer() {
+  using namespace util;
+  const auto &jcp = kernel_->jcp_;
+  if (fuse_conv1x1_) {
+    ;
+  } else {
+    ;
+  }
+}
+
+template <typename dst_data_t>
 bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
                                     const std::unique_ptr<memory> &src,
                                     const std::unique_ptr<memory> &wei,
@@ -28,25 +39,16 @@ bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
                                     std::array<int, 2> sz_stride,
                                     std::array<int, 2> sz_padding,
                                     std::unique_ptr<memory> &dst,
+                                    std::vector<float> conv0_scales,
+                                    std::vector<float> conv1_scales,
                                     const std::unique_ptr<memory> &wei1x1,
                                     const std::unique_ptr<memory> &bia1x1,
                                     bool conv0_relu,
                                     bool conv1_relu) {
   using namespace util;
   // check data type
-  if (!all_true(
-          src->data_type() == memory::dtype::u8,
-          wei->data_type() == memory::dtype::s8,
-          dst->data_type() == type2dtype<dst_data_t>::dtype,
-          one_of(type2dtype<dst_data_t>::dtype,
-                 memory::dtype::f32,
-                 memory::dtype::s32,
-                 memory::dtype::s8,
-                 memory::dtype::u8),
-          bia == nullptr || bia->data_type() == memory::dtype::s32,
-          wei1x1 == nullptr || wei1x1->data_type() == memory::dtype::s8,
-          bia1x1 == nullptr || bia1x1->data_type() == memory::dtype::s32)) {
-    info("Data type do not match");
+  if (dst->data_type() != type2dtype<dst_data_t>::dtype) {
+    info("Dst data type do not match");
     return false;
   }
 
@@ -63,6 +65,10 @@ bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
       return false;
     }
   }
+  if (src_dims[0] != dst_dims[0]) {
+    info("Batch size do not equal");
+    return false;
+  }
   if (src_dims[C] != wei_dims[C]) {
     info("Input channel do not match");
     return false;
@@ -75,6 +81,9 @@ bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
     }
     if (bia != nullptr && bia->std_dims()[0] != wei_dims[0]) {
       info("Bias channel do not match");
+      return false;
+    }
+    if (!one_of(conv0_scales.size(), 1UL, size_t(dst_dims[C]))) {
       return false;
     }
   } else {
@@ -96,32 +105,27 @@ bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
       info("Bias channel do not match");
       return false;
     }
+    if (!all_true(one_of(conv0_scales.size(), 1UL, size_t(wei1x1_dims[1])),
+                  one_of(conv1_scales.size(), 1UL, size_t(wei1x1_dims[0])))) {
+      return false;
+    }
   }
 
   check_eq(ngroups, 1);  // only verified gp==1 yet
-
   return jit::jit_conv_kernel::init_conf(conf,
                                          src,
                                          wei,
                                          bia,
+                                         ngroups,
                                          sz_stride,
                                          sz_padding,
                                          dst,
+                                         conv0_scales,
+                                         conv1_scales,
                                          wei1x1,
                                          bia1x1,
                                          conv0_relu,
                                          conv1_relu);
-}
-
-template <typename dst_data_t>
-void op_conv<dst_data_t>::infer() {
-  using namespace util;
-  const auto &jcp = kernel_->jcp_;
-  if (fuse_conv1x1_) {
-    ;
-  } else {
-    ;
-  }
 }
 
 template class op_conv<f32>;

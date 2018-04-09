@@ -35,9 +35,12 @@ struct jit_conv_kernel : public jit_generator {
                         const std::unique_ptr<memory> &src,
                         const std::unique_ptr<memory> &wei,
                         const std::unique_ptr<memory> &bia,
+                        int ngroups,  // only enabled on conv0
                         std::array<int, 2> sz_stride,
                         std::array<int, 2> sz_padding,
                         std::unique_ptr<memory> &dst,
+                        std::vector<float> conv0_scales,
+                        std::vector<float> conv1_scales,
                         const std::unique_ptr<memory> &wei1x1,
                         const std::unique_ptr<memory> &bia1x1,
                         bool conv0_relu,
@@ -47,11 +50,100 @@ struct jit_conv_kernel : public jit_generator {
   void (*jit_ker_)(jit_conv_call_s *);
 
 private:
+  enum {
+    ker_reg_base_idx = 28,
+  };
   using reg64_t = const Xbyak::Reg64;
   using reg32_t = const Xbyak::Reg32;
   using zmm_t = const Xbyak::Zmm;
   using ymm_t = const Xbyak::Ymm;
   using xmm_t = const Xbyak::Xmm;
+
+  reg64_t reg_inp = r8;
+  reg64_t reg_ker = r9;
+  reg64_t reg_out = r10;  // when fuse 1x1, do not need 3x3 out
+  reg64_t aux_reg_inp = r11;
+  reg64_t reg_ptr_sum_scale = r11;
+  reg64_t aux_reg_ker = r12;
+  reg64_t reg_acc_s32 = r13;
+  reg64_t reg_scratch_3x3 = r14;
+  reg64_t reg_kj = rax;
+  reg64_t reg_ptr_scales = rax;
+  reg64_t reg_oi = rbx;  // can not use rbx any more
+  reg64_t reg_bias = rdx;
+  reg64_t reg_kh = abi_not_param1;
+  reg64_t param = abi_param1;
+  reg64_t reg_channel = r15;
+  reg64_t reg_tmp = rbp;
+  reg64_t imm_addr64 = r15;
+
+  zmm_t zmm_tmp = zmm_t(28);
+  zmm_t zmm_one = zmm_t(29);
+  zmm_t zmm_scales = zmm_t(30);
+  zmm_t zmm_bcast = zmm_t(30);
+  zmm_t zmm_zero = zmm_t(31);
+  zmm_t zmm_wei = zmm_t(31);
+
+  // for conv 1x1
+  reg64_t reg_ptr_out1x1 = r10;
+  reg64_t aux_reg_ptr_acc1x1 = r11;  // this is a tmp_reg for acc1x1 add offset
+  reg64_t reg_ptr_wei1x1 = r12;      // used reg_ptr_sum_scale reg
+  reg64_t reg_ptr_acc1x1 =
+      r14;  // use r14 which should always be used in kernel
+  reg64_t reg_scratch_1x1 = r15;   // the r14 is used for acc1x1 for whole life
+  reg64_t reg_ocb3x3 = r15;        // use reg_channel
+  reg32_t reg_1x1_src_4u8 = r15d;  // use reg_channel reg
+  reg64_t aux_reg_ptr_wei1x1 =
+      rax;                          // use reg_kj, used only in 3x3 compute_loop
+  reg64_t reg_ptr_scales1x1 = rax;  // use reg_ptr_scales
+  reg64_t reg_ptr_bia1x1 =
+      rdx;  // use reg_bias, can use channel reg either i think
+  zmm_t zmm_1x1_src_bcast_u8 = zmm_t(31);  // use use zero zmm
+  zmm_t zmm_1x1_wei = zmm_t(30);           // use zmm_bcast zmm
+
+  zmm_t zmm_out(int i_ur, int i_oc) {
+    int idx = i_ur + i_oc * jcp_.ur_w;
+    assert(idx < ker_reg_base_idx);
+    return zmm_t(idx);
+  }
+  xmm_t xmm_out(int i_ur, int i_oc) {
+    int idx = i_ur + i_oc * jcp_.ur_w;
+    assert(idx < ker_reg_base_idx);
+    return xmm_t(idx);
+  }
+  zmm_t zmm_inp(int i_ic, int nb_x_blocking) {
+    int idx = i_ic + nb_x_blocking * jcp_.ur_w;
+    assert(idx < 31);
+    return zmm_t(idx);
+  }
+  int get_ow_start(int ki, int pad_l) {
+    return std::max(0, (pad_l - ki + jcp_.sw - 1) / jcp_.sw);
+  }
+  int get_ow_end(int ur_w, int ki, int pad_r) {
+    return ur_w -
+           std::max(0, (ki + pad_r - (jcp_.kw - 1) + jcp_.sw - 1) / jcp_.sw);
+  }
+  bool maybe_relu(int position);
+  void prepare_output(int ur_w);
+  void store_output(int ur_w);
+  void compute_loop(int ur_w, int pad_l, int pad_r);
+
+  // for conv 1x1
+  // 1x1 acc use 3x3 input. size is ur_w * zmm
+  // rage: jcp.nb_oc_blocking * jcp.ur_w + (0 ~ ur_w)
+  zmm_t zmm_1x1out(int jw) {
+    int idx = jw + jcp_.nb_oc_blocking * jcp_.ur_w;
+    assert(idx < ker_reg_base_idx);
+    return zmm_t(idx);
+  }
+  xmm_t xmm_1x1out(int jw) {
+    int idx = jw + jcp_.nb_oc_blocking * jcp_.ur_w;
+    assert(idx < ker_reg_base_idx);
+    return xmm_t(idx);
+  }
+  void compute1x1_loop(int ur_w);
+  void prepare_1x1output(int ur_w);
+  void store_1x1output(int ur_w, int ocb1x1);
 
   void generate();
 };

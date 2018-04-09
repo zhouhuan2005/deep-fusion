@@ -64,6 +64,37 @@ inline bool all_true(T expr, Args... others_expr) {
   return expr && all_true(others_expr...);
 }
 
+inline int dividable_of(int val, int divisor) {
+  if (val % divisor == 0) {
+    return divisor;
+  } else {
+    return 1;
+  }
+}
+
+template <typename... Args>
+inline int dividable_of(int val, int divisor, Args... others_divisor) {
+  if (val % divisor == 0) {
+    return divisor;
+  } else {
+    return dividable_of(val, others_divisor...);
+  }
+}
+
+inline int find_dividable(int val, int divisor) {
+  if (divisor <= 1) {
+    return 1;
+  }
+  if (divisor > val) {
+    return val;
+  }
+  if (val % divisor == 0) {
+    return divisor;
+  } else {
+    return find_dividable(val, divisor - 1);
+  }
+}
+
 template <typename T>
 void copy_array(T *dst, T *src, size_t sz) {
 // do not use memcpy, in case of memory aligment
