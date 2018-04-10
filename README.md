@@ -1,7 +1,5 @@
 # JIT(Just-In-Time) Inference library
-JIT Inference library. \
-This library will only work on AVX512 and above yet, maybe support AVX2 or below later.
-
+JIT Inference library, an deep fusion library, support on AVX, AVX2 and AVX512 instructions and AVX512 VNNI later.
 
 ## Compile
 1. mkdir -p build && cd build
