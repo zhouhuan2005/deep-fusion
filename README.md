@@ -1,5 +1,5 @@
-# JIT(Just-In-Time) Inference library
-JIT Inference library, an deep fusion library, support on AVX, AVX2 and AVX512 instructions and AVX512 VNNI later.
+# tensor-fusion
+a fused tensor inference optimization primitives lib on Intel Xeon E5 platforms
 
 ## Compile
 1. mkdir -p build && cd build
