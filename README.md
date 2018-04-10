@@ -1,5 +1,5 @@
-# tensor-fusion
-a fused tensor inference optimization primitives lib on Intel Xeon E5 platforms
+# Deep Fusion
+a deep-fused inference optimization primitives lib on Intel Xeon E5 platforms, bulks of codes are borrowed from [MKL-DNN](https://github.com/intel/mkl-dnn).
 
 ## Compile
 1. mkdir -p build && cd build
