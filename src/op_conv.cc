@@ -20,13 +20,25 @@ namespace jitinfer {
 
 template <typename dst_data_t>
 void op_conv<dst_data_t>::infer() {
+  if (fuse_conv1x1_) {
+    infer_conv0conv1();
+  } else {
+    infer_conv0();
+  }
+}
+
+template <typename dst_data_t>
+void op_conv<dst_data_t>::infer_conv0() {
   using namespace util;
   const auto &jcp = kernel_->jcp;
-  if (fuse_conv1x1_) {
-    ;
-  } else {
-    ;
-  }
+  ;
+}
+
+template <typename dst_data_t>
+void op_conv<dst_data_t>::infer_conv0conv1() {
+  using namespace util;
+  const auto &jcp = kernel_->jcp;
+  ;
 }
 
 template <typename dst_data_t>
