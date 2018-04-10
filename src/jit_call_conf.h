@@ -19,6 +19,8 @@
 #include "jitinfer.h"
 
 namespace jitinfer {
+enum conv_loop_order_t { loop_cgn, loop_gnc, loop_ngc };
+
 namespace jit {
 struct jit_concat_call_s {
   const void **src;
@@ -36,6 +38,27 @@ struct jit_concat_conf_t {
   int block;      // u8: 64, s32: 16
   int bits_size;  // 128, 256, 512 : xmm, ymm, zmm
   bool with_relu;
+};
+
+struct jit_conv_call_s {
+  const void *src;
+  const void *dst; /* hack, non-const for forward */
+  const void *wei;
+  const void *bia;
+  const void *scales;
+  const void *acc_s32;
+
+  const void *wei1x1;
+  const void *bia1x1;
+  const void *acc1x1;
+  const void *out1x1;
+  const void *scales1x1;
+  size_t ocb3x3;
+
+  size_t kh_padding;
+  size_t kw_padding;
+  size_t channel;
+  size_t oc_blocks;
 };
 
 struct jit_conv_conf_t {
@@ -57,6 +80,7 @@ struct jit_conv_conf_t {
   int typesize_conv1_bia;
   memory::dtype dst_dt, conv0_bias_dt, conv1_bias_dt;
   round_mode conv0_round_mode, conv1_round_mode;
+  conv_loop_order_t loop_order;
   /* conv 1x1*/
   int oc1x1;
   int oc1x1_block;
@@ -69,27 +93,6 @@ struct jit_conv_conf_t {
   bool conv1_with_bias;
   bool conv0_multi_oc_scale;  // whether use multi channel to scale oc
   bool conv1_multi_oc_scale;
-};
-
-struct jit_conv_call_s {
-  const void *src;
-  const void *dst; /* hack, non-const for forward */
-  const void *filt;
-  const void *bias;
-  const void *scales;
-  const void *acc_s32;
-
-  const void *wei1x1;
-  const void *bia1x1;
-  const void *acc1x1;
-  const void *out1x1;
-  const void *scales1x1;
-  size_t ocb3x3;
-
-  size_t kh_padding;
-  size_t kw_padding;
-  size_t channel;
-  size_t oc_blocks;
 };
 }
 }
