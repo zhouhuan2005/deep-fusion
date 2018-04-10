@@ -26,7 +26,7 @@ template <typename dst_data_t>
 class op_conv : public op {
   typedef u8 src_data_t;
   typedef s8 wei_data_t;
-  typedef s32 bia_data_t;
+  // typedef s32 bia_data_t;
   typedef s32 acc_data_t;
 
 public:
@@ -64,18 +64,32 @@ public:
                    conv1_round_mode)) {
       error_and_exit("Init Conv op failed!");
     }
-
     kernel_ = new jit::jit_conv_kernel(conf);
     const auto &jcp = kernel_->jcp;
     const int nthreads = omp_get_max_threads();
     ws_per_thread_ = jcp.oh * jcp.ow * jcp.oc_block * jcp.nb_oc_blocking;
     ws_ = (acc_data_t *)aligned_malloc(
         nthreads * ws_per_thread_ * sizeof(acc_data_t), 4096);  // 64??
-
     // acc format (h, oc/16, ow, 16o)
     ws1x1_per_thread_ = jcp.oh * jcp.ow * jcp.oc1x1;
     ws1x1_ = (acc_data_t *)aligned_malloc(
         nthreads * ws1x1_per_thread_ * sizeof(acc_data_t), 4096);  // 64??
+
+    // save data point
+    // TODO: enable update data handle from outside
+    src_data_ = reinterpret_cast<const src_data_t *>(src->data());
+    wei_data_ = reinterpret_cast<const wei_data_t *>(wei->data());
+    dst_data_ = reinterpret_cast<dst_data_t *>(dst->data());
+    bia_data_ =
+        bia != nullptr ? reinterpret_cast<const void *>(bia->data()) : NULL;
+    wei1x1_data_ = wei1x1 != nullptr
+                       ? reinterpret_cast<const wei_data_t *>(wei1x1->data())
+                       : NULL;
+    bia1x1_data_ = bia1x1 != nullptr
+                       ? reinterpret_cast<const void *>(bia1x1->data())
+                       : NULL;
+    conv0_scales_data_ = reinterpret_cast<const float *>(conv0_scales.data());
+    conv1_scales_data_ = reinterpret_cast<const float *>(conv1_scales.data());
   }
 
   ~op_conv() {
@@ -102,10 +116,17 @@ protected:
                  round_mode conv0_round_mode,
                  round_mode conv1_round_mode);
   void infer() override;
+  inline void infer_conv0();
+  inline void infer_conv0conv1();
   const char *name() { return "conv"; }
 
 private:
   bool fuse_conv1x1_;
+  const src_data_t *src_data_;
+  const wei_data_t *wei_data_, *wei1x1_data_;
+  const void *bia_data_, *bia1x1_data_;
+  const float *conv0_scales_data_, *conv1_scales_data_;
+  dst_data_t *dst_data_;
   jit::jit_conv_kernel *kernel_;
   size_t ws_per_thread_;
   size_t ws1x1_per_thread_;

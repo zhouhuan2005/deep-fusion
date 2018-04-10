@@ -224,7 +224,7 @@ void jit_conv_kernel::store_output(int ur_w) {
   cmp(reg_channel, adjusment);  // LAST channel
   jl(l_update_acc, T_NEAR);
 
-  mov(reg_bias, ptr[param1 + GET_OFF(bias)]);
+  mov(reg_bias, ptr[param1 + GET_OFF(bia)]);
   mov(reg_ptr_scales, ptr[param1 + GET_OFF(scales)]);
   vpxord(zmm_zero, zmm_zero, zmm_zero);
   for (int k = 0; k < jcp.nb_oc_blocking; k++) {
@@ -428,7 +428,7 @@ void jit_conv_kernel::generate() {
   } else {
     mov(reg_out, ptr[param1 + GET_OFF(dst)]);
   }
-  mov(reg_ker, ptr[param1 + GET_OFF(filt)]);
+  mov(reg_ker, ptr[param1 + GET_OFF(wei)]);
   mov(reg_kh, ptr[param1 + GET_OFF(kh_padding)]);
   mov(reg_acc_s32, ptr[param1 + GET_OFF(acc_s32)]);
 
@@ -507,6 +507,7 @@ void jit_conv_kernel::generate() {
 
   postamble();
 }
+
 bool jit_conv_kernel::init_conf(jit_conv_conf_t &jcp,
                                 const std::unique_ptr<memory> &src,
                                 const std::unique_ptr<memory> &wei,
@@ -587,6 +588,11 @@ bool jit_conv_kernel::init_conf(jit_conv_conf_t &jcp,
     return false;
   }
   jcp.use_vnni = mayiuse(avx512_core_vnni);
+  // pick loop order
+  jcp.loop_order = loop_cgn;
+  if (jcp.gp > 1) {
+    jcp.loop_order = loop_ngc;
+  }
 
   jcp.fuse_conv1x1 = wei1x1 != nullptr;
   if (jcp.fuse_conv1x1) {
