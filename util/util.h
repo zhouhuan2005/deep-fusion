@@ -29,7 +29,7 @@
 #include <windows.h>
 #endif
 
-namespace jitinfer {
+namespace deepfusion {
 
 namespace util {
 
@@ -218,4 +218,5 @@ bool jit_dump_code();
 
 void *aligned_malloc(size_t size, int alignment);
 void free(void *p);
+
 }

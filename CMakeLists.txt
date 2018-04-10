@@ -28,9 +28,9 @@ if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "CMAKE_BUILD_TYPE is unset, defaulting to Release")
 endif()
 
-set(PROJECT_NAME "JITInfer")
+set(PROJECT_NAME "DeepFusion")
 set(PROJECT_VERSION "0.1")
-set(LIB_NAME jitinfer)
+set(LIB_NAME deepfusion)
 set(PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -72,7 +72,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include(system)              # gcc flags
 include(simd)                # check if AVX512 or VNNI is supported
-include(external/mklml)      # download mklml package and use iomp for jitinfer, use others for mkldnn
+include(external/mklml)      # download mklml package and use iomp, use others for mkldnn
 include(external/mkldnn)     # download mkldnn for reference comparion
 include(external/xbyak)      # download xbyak
 include(external/gtest)      # download, build, install gtest
@@ -83,7 +83,7 @@ if(NOT AVX512_FOUND)
 endif()
 
 if(${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel")
-  # disable most features, only generate libjitinfer.so
+  # disable most features, only generate libdeepfusion.so
   set(WITH_VERBOSE OFF)
   set(WITH_DUMP_CODE OFF)
   set(WITH_BENCHMARK OFF)

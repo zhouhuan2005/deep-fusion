@@ -24,7 +24,7 @@ file(GLOB BENCHMARK_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 set(util_bench_cc
   ${PROJECT_SOURCE_DIR}/util/util_benchmark.cc
   ${PROJECT_SOURCE_DIR}/util/util_mkldnn.cc
-  ${PROJECT_SOURCE_DIR}/util/util_jitinfer.cc
+  ${PROJECT_SOURCE_DIR}/util/util_deepfusion.cc
   ${PROJECT_SOURCE_DIR}/util/util.cc)
 foreach(TEST_FILE ${BENCHMARK_SRCS})
   get_filename_component(TEST_FILE_NAME ${TEST_FILE} NAME_WE)

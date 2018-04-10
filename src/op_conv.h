@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include <jitinfer.h>
+#include <deepfusion.h>
 #include "jit_conv_kernel.h"
 #include "log.h"
 #include "omp_thread.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 template <typename dst_data_t>
 class op_conv : public op {

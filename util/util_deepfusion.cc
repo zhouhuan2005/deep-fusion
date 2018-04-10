@@ -14,10 +14,11 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 
-namespace jitinfer {
+namespace deepfusion {
 namespace util {
+
 size_t dtype_size(memory::dtype dt) {
   switch (dt) {
 #define CASE(tp) \
@@ -37,8 +38,10 @@ size_t dtype_size(memory::dtype dt) {
 int conv_output_size(int image, int kernel, int stride, int padding) {
   return (image + 2 * padding - kernel) / stride + 1;
 }
+
 int pool_output_size(int image, int kernel, int stride, int padding) {
   return (image + 2 * padding - kernel + stride - 1) / stride + 1;
 }
+
 }
 }

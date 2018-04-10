@@ -16,7 +16,7 @@
 
 #include "util.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 void *aligned_malloc(size_t size, int alignment) {
   void *ptr;

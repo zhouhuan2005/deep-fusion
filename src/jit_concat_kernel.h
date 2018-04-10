@@ -19,7 +19,7 @@
 #include "jit_call_conf.h"
 #include "jit_generator.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 namespace jit {
 

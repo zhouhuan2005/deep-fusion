@@ -22,7 +22,7 @@
 #include <memory>
 #include <vector>
 
-namespace jitinfer {
+namespace deepfusion {
 
 typedef float f32;
 typedef int32_t s32;

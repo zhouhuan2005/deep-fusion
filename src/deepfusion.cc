@@ -14,12 +14,12 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "jitinfer.h"
+#include "deepfusion.h"
 #include "op_concat.h"
 #include "op_conv.h"
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 memory::dims nchw2format(const memory::nchw_dims &dm,
                          const memory::format fmt) {
@@ -167,4 +167,5 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
               conv0_scales,
               conv0_round_mode);
 }
+
 }

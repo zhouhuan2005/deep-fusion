@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include <jitinfer.h>
+#include "deepfusion.h"
 #include "jit_concat_kernel.h"
 #include "log.h"
 #include "omp_thread.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 template <typename dtype>
 class op_concat : public op {
@@ -90,4 +90,5 @@ private:
   int *ic_;
   int *nb_ic_;
 };
+
 }

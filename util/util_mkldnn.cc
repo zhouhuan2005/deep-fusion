@@ -17,8 +17,9 @@
 #include "util_mkldnn.h"
 #include "log.h"
 
-namespace jitinfer {
+namespace deepfusion {
 namespace util {
+
 // TODO: get concat pd
 std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(
     const mkldnn::memory::desc md, const mkldnn::engine& eng) {
@@ -48,7 +49,7 @@ memory::dtype dtype(mkldnn::memory::data_type dt) {
 mkldnn::memory::data_type dtype(memory::dtype dt) {
   switch (dt) {
 #define CASE(tp)                    \
-  case jitinfer::memory::dtype::tp: \
+  case deepfusion::memory::dtype::tp: \
     return mkldnn::memory::data_type::tp
     CASE(f32);
     CASE(s32);
@@ -68,5 +69,6 @@ mkldnn::memory::dims dims(const memory::nchw_dims& nchwdims) {
   return out;
 }
 }
+
 }
 }

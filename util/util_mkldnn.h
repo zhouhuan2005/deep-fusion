@@ -14,25 +14,23 @@
 * limitations under the License.
 *******************************************************************************/
 
-/**
- * This file defines some utilities of MKL-DNN, or exchange with jitinfer
- */
 #pragma once
 
-#include "jitinfer.h"
+#include "deepfusion.h"
 #include "mkldnn.hpp"
 
-namespace jitinfer {
+namespace deepfusion {
 namespace util {
 
 std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(
     const mkldnn::memory::desc md, const mkldnn::engine& eng);
 
-// exchange btw mkldnn and jitinfer
+// exchange btw mkldnn and deepfusion
 namespace exchange {
 mkldnn::memory::dims dims(const memory::nchw_dims& nchwdims);
 memory::dtype dtype(mkldnn::memory::data_type dt);
 mkldnn::memory::data_type dtype(memory::dtype dt);
 }
+
 }
 }

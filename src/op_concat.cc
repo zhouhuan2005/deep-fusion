@@ -15,9 +15,9 @@
 *******************************************************************************/
 
 #include "op_concat.h"
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 template <typename dtype>
 void op_concat<dtype>::infer() {

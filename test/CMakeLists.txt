@@ -25,7 +25,7 @@ set(MAIN_SRC_GTEST main.cc)
 set(util_test_cc
   ${PROJECT_SOURCE_DIR}/util/util_test.cc
   ${PROJECT_SOURCE_DIR}/util/util_mkldnn.cc
-  ${PROJECT_SOURCE_DIR}/util/util_jitinfer.cc
+  ${PROJECT_SOURCE_DIR}/util/util_deepfusion.cc
   ${PROJECT_SOURCE_DIR}/util/util.cc)
 
 foreach(TEST_FILE ${TEST_CASES_SRC})

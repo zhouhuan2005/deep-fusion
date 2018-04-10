@@ -17,7 +17,7 @@
 #include "gtest/gtest.h"
 #include "util.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 TEST(TestUtil, test_util) {
   using namespace util;

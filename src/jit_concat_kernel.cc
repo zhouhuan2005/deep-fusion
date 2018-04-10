@@ -15,14 +15,14 @@
 *******************************************************************************/
 
 #include "jit_concat_kernel.h"
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 
 #define GET_OFF(field) offsetof(jit_concat_call_s, field)
 
 // @note: do not use any MACRO or #define inside JIT kernel
 // it would have some uncertain issue in JIT, need figure out why
 
-namespace jitinfer {
+namespace deepfusion {
 namespace jit {
 
 using namespace Xbyak;
@@ -131,7 +131,7 @@ bool jit_concat_kernel::init_conf(
     const std::vector<std::unique_ptr<memory>>& srcs,
     const std::unique_ptr<memory>& dst,
     bool post_relu) {
-  jcp = jitinfer::util::zero<decltype(jcp)>();
+  jcp = deepfusion::util::zero<decltype(jcp)>();
 
   jcp.n_inputs = srcs.size();
   jcp.with_relu = post_relu;

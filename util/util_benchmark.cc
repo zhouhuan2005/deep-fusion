@@ -19,7 +19,7 @@
 #include "log.h"
 #include "omp_thread.h"
 
-namespace jitinfer {
+namespace deepfusion {
 namespace util {
 
 #ifdef WITH_COLD_CACHE
@@ -29,7 +29,9 @@ dummy_memory::dummy_memory(size_t num_bytes) {
   size_ = num_bytes * max_nthr;
   p_ = (unsigned char*)aligned_malloc(size_, 64);
 }
+
 dummy_memory::~dummy_memory() { free(p_); }
+
 void dummy_memory::clear_cache() {
 #pragma omp parallel for schedule(static)
   for (size_t i = 0; i < size_; ++i) {

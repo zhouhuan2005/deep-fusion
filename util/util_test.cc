@@ -16,7 +16,7 @@
 
 #include "util_test.h"
 
-namespace jitinfer {
+namespace deepfusion {
 namespace util {
 // add more
 }

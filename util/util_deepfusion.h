@@ -14,18 +14,15 @@
 * limitations under the License.
 *******************************************************************************/
 
-/**
- * This file is used on jitinfer library
- */
 #pragma once
 
-#include "jitinfer.h"
+#include "deepfusion.h"
 #include "util.h"
 
-namespace jitinfer {
+namespace deepfusion {
 namespace util {
 
-// type(float, int8...) to jitinfer::memory::dtype
+// type(float, int8...) to deepfusion::memory::dtype
 template <typename T>
 struct type2dtype {};
 template <>
@@ -45,7 +42,7 @@ struct type2dtype<s32> {
   static const auto dtype = memory::dtype::s32;
 };
 
-// jitinfer::memory::dtype to type(float, int8...)
+// deepfusion::memory::dtype to type(float, int8...)
 template <memory::dtype>
 struct dtype2type {};
 template <>

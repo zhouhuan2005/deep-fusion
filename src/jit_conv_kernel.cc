@@ -15,11 +15,11 @@
 *******************************************************************************/
 
 #include "jit_conv_kernel.h"
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 
 #define GET_OFF(field) offsetof(jit_conv_call_s, field)
 
-namespace jitinfer {
+namespace deepfusion {
 namespace jit {
 
 using namespace Xbyak;
@@ -669,5 +669,6 @@ bool jit_conv_kernel::init_conf(jit_conv_conf_t &jcp,
 
   return true;
 }
+
 }
 }

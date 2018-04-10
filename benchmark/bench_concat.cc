@@ -17,7 +17,7 @@
 #include <gflags/gflags.h>
 #include <mkldnn.hpp>
 #include <sstream>
-#include "jitinfer.h"
+#include "deepfusion.h"
 #include "log.h"
 #include "util_benchmark.h"
 #include "util_mkldnn.h"
@@ -35,7 +35,7 @@ static mkldnn::engine eng = mkldnn::engine(mkldnn::engine::cpu, 0);
 
 struct bench_params {
   // @note: dims always write as nchw, but acutal run format is nhwc
-  std::vector<jitinfer::memory::nchw_dims> srcs_dims;
+  std::vector<deepfusion::memory::nchw_dims> srcs_dims;
 };
 
 void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
@@ -78,36 +78,36 @@ void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
 
   if (post_relu) {
     // add relu
-    relu_pd = jitinfer::util::get_mkldnn_relu_pd(dst_desc, eng);
+    relu_pd = deepfusion::util::get_mkldnn_relu_pd(dst_desc, eng);
     fwd_relu.reset(new eltwise_forward(*relu_pd, dst, dst));
     pp_relu.clear();
     pp_relu.push_back(*fwd_relu);
   }
 
   for (auto i = 0; i < FLAGS_burning_iter; ++i) {
-    jitinfer::util::clear_cache();
+    deepfusion::util::clear_cache();
     stream(stream::kind::eager).submit(pp_concat).wait();
     if (post_relu) {
       stream(stream::kind::eager).submit(pp_relu).wait();
     }
-    jitinfer::util::clear_cache();
+    deepfusion::util::clear_cache();
   }
 
   // cal time
   double sum_concat = 0;
   double sum_relu = 0;
   for (auto i = 0; i < FLAGS_iter; ++i) {
-    jitinfer::util::clear_cache();
-    auto s1 = jitinfer::util::timer::get_current_ms();
+    deepfusion::util::clear_cache();
+    auto s1 = deepfusion::util::timer::get_current_ms();
     stream(stream::kind::eager).submit(pp_concat).wait();
-    auto s2 = jitinfer::util::timer::get_current_ms();
+    auto s2 = deepfusion::util::timer::get_current_ms();
     sum_concat += (s2 - s1);
     if (post_relu) {
       stream(stream::kind::eager).submit(pp_relu).wait();
-      auto s3 = jitinfer::util::timer::get_current_ms();
+      auto s3 = deepfusion::util::timer::get_current_ms();
       sum_relu += (s3 - s2);
     }
-    jitinfer::util::clear_cache();
+    deepfusion::util::clear_cache();
   }
 
   auto avg_concat = sum_concat / (double)FLAGS_iter;
@@ -122,12 +122,12 @@ void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
   info("%s", oss.str().c_str());
 }
 
-void bench_jitinfer_concat(
-    const std::vector<jitinfer::memory::nchw_dims>& srcs_dims,
-    const jitinfer::memory::nchw_dims& dst_dims,
-    jitinfer::memory::dtype dt,
+void bench_deepfusion_concat(
+    const std::vector<deepfusion::memory::nchw_dims>& srcs_dims,
+    const deepfusion::memory::nchw_dims& dst_dims,
+    deepfusion::memory::dtype dt,
     bool post_relu) {
-  using namespace jitinfer;
+  using namespace deepfusion;
 
   std::vector<std::unique_ptr<memory>> srcs(srcs_dims.size());
   std::unique_ptr<memory> dst;
@@ -140,32 +140,32 @@ void bench_jitinfer_concat(
   auto c = concat(srcs, dst, post_relu);
 
   for (auto i = 0; i < FLAGS_burning_iter; ++i) {
-    jitinfer::util::clear_cache();
+    util::clear_cache();
     c->submit();
-    jitinfer::util::clear_cache();
+    util::clear_cache();
   }
 
   double sum_concat = 0;
   for (auto i = 0; i < FLAGS_iter; ++i) {
-    jitinfer::util::clear_cache();
-    auto s1 = jitinfer::util::timer::get_current_ms();
+    util::clear_cache();
+    auto s1 = util::timer::get_current_ms();
     c->submit();
-    auto s2 = jitinfer::util::timer::get_current_ms();
+    auto s2 = util::timer::get_current_ms();
     sum_concat += (s2 - s1);
-    jitinfer::util::clear_cache();
+    util::clear_cache();
   }
 
   std::ostringstream oss;
-  oss << "JitInfer Concat" << (post_relu ? "_ReLU" : "")
+  oss << "DeepFusion Concat" << (post_relu ? "_ReLU" : "")
       << " avg time: " << sum_concat / (double)FLAGS_iter << " ms";
   info("%s", oss.str().c_str());
 }
 
 void bench_both(const bench_params& p,
-                jitinfer::memory::dtype dt,
+                deepfusion::memory::dtype dt,
                 bool post_relu) {
   auto srcs_dims = p.srcs_dims;
-  jitinfer::memory::nchw_dims dst_dims;  // given as nchw
+  deepfusion::memory::nchw_dims dst_dims;  // given as nchw
   std::vector<mkldnn::memory::dims> mkldnn_srcs_dims(srcs_dims.size());
   mkldnn::memory::dims mkldnn_dst_dims;
   dst_dims[0] = srcs_dims[0][0];
@@ -174,7 +174,7 @@ void bench_both(const bench_params& p,
   dst_dims[3] = srcs_dims[0][3];
   std::ostringstream oss;
   info("==========================================");
-  oss << "Benchmark with data type " << jitinfer::util::dtype2str(dt)
+  oss << "Benchmark with data type " << deepfusion::util::dtype2str(dt)
       << (post_relu ? ", with ReLU" : " without ReLU");
   oss << "\nData sizes: In";
   for (size_t i = 0; i < srcs_dims.size(); i++) {
@@ -189,17 +189,17 @@ void bench_both(const bench_params& p,
     }
     oss << "(" << dims[0] << ", " << dims[1] << ", " << dims[2] << ", "
         << dims[3] << ")@NCHW, ";
-    mkldnn_srcs_dims[i] = jitinfer::util::exchange::dims(dims);
+    mkldnn_srcs_dims[i] = deepfusion::util::exchange::dims(dims);
   }
   oss << "==> Out(" << dst_dims[0] << ", " << dst_dims[1] << ", " << dst_dims[2]
       << ", " << dst_dims[3] << ")@NCHW";
   info("%s", oss.str().c_str());
-  mkldnn_dst_dims = jitinfer::util::exchange::dims(dst_dims);
+  mkldnn_dst_dims = deepfusion::util::exchange::dims(dst_dims);
   bench_mkldnn_concat(mkldnn_srcs_dims,
                       mkldnn_dst_dims,
-                      jitinfer::util::exchange::dtype(dt),
+                      deepfusion::util::exchange::dtype(dt),
                       post_relu);
-  bench_jitinfer_concat(srcs_dims, dst_dims, dt, post_relu);
+  bench_deepfusion_concat(srcs_dims, dst_dims, dt, post_relu);
 }
 
 int main(int argc, char** argv) {
@@ -208,7 +208,7 @@ int main(int argc, char** argv) {
   // for example:
   // bench_concat -n 3 -c 16,16,64 -h 4 -w 6 -dtype s8 -post_relu
   if (!FLAGS_c.empty()) {
-    auto ics = jitinfer::util::split(FLAGS_c);
+    auto ics = deepfusion::util::split(FLAGS_c);
     bench_params test_case;
     test_case.srcs_dims.resize(ics.size());
     for (size_t i = 0; i < ics.size(); ++i) {
@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
       dims[3] = FLAGS_w;
     }
     bench_both(
-        test_case, jitinfer::util::str2dtype(FLAGS_dtype), FLAGS_post_relu);
+        test_case, deepfusion::util::str2dtype(FLAGS_dtype), FLAGS_post_relu);
     return 0;
   }
 
@@ -230,11 +230,11 @@ int main(int argc, char** argv) {
       {{{4, 64, 64, 64}, {4, 96, 64, 64}}},        // 32x
       {{{4, 16, 9, 9}, {4, 64, 9, 9}}}             // 16x
   };
-  jitinfer::memory::dtype dtypes[] = {jitinfer::memory::dtype::s8,
-                                      jitinfer::memory::dtype::s32,
-                                      jitinfer::memory::dtype::f32};
+  deepfusion::memory::dtype dtypes[] = {deepfusion::memory::dtype::s8,
+                                        deepfusion::memory::dtype::s32,
+                                        deepfusion::memory::dtype::f32};
   size_t param_sz = sizeof(default_cases) / sizeof(bench_params);
-  size_t dt_sz = sizeof(dtypes) / sizeof(jitinfer::memory::dtype);
+  size_t dt_sz = sizeof(dtypes) / sizeof(deepfusion::memory::dtype);
   for (size_t i = 0; i < param_sz; ++i) {
     for (auto post_relu : {true, false}) {
       for (size_t j = 0; j < dt_sz; ++j) {

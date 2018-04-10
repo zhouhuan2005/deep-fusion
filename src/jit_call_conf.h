@@ -17,9 +17,10 @@
 #pragma once
 
 #include <stdint.h>
-#include "jitinfer.h"
+#include "deepfusion.h"
 
-namespace jitinfer {
+namespace deepfusion {
+
 enum conv_loop_order_t { loop_cgn, loop_gnc, loop_ngc };
 
 namespace jit {

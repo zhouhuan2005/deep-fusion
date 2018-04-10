@@ -15,9 +15,9 @@
 *******************************************************************************/
 
 #include "op_conv.h"
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 template <typename dst_data_t>
 void op_conv<dst_data_t>::infer() {

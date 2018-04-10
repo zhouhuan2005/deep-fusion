@@ -17,17 +17,17 @@
 #pragma once
 #include <cmath>
 #include "gtest/gtest.h"
-#include "jitinfer.h"
+#include "deepfusion.h"
 #include "omp_thread.h"
 #include "util.h"
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 
-namespace jitinfer {
+namespace deepfusion {
 namespace util {
 
 template <typename data_t>
 static inline data_t set_value(size_t index) {
-  using data_type = jitinfer::memory::dtype;
+  using data_type = deepfusion::memory::dtype;
 
   if (type2dtype<data_t>::dtype == data_type::f32) {
     double mean = 1., deviation = 1e-2;
@@ -62,5 +62,6 @@ void compare_array(T* dst, T* ref, size_t sz) {
     }
   }
 }
+
 }
 }

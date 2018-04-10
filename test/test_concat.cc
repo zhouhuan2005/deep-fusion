@@ -14,14 +14,14 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 #include "util_mkldnn.h"
 #include "util_test.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
-using memory = jitinfer::memory;
-using format = jitinfer::memory::format;
+using memory = deepfusion::memory;
+using format = deepfusion::memory::format;
 
 struct test_concat_params {
   std::vector<memory::nchw_dims> srcs_dims;
@@ -79,7 +79,7 @@ class test_concat : public ::testing::TestWithParam<test_concat_params> {
 
     if (post_relu) {
       // add relu
-      relu_pd = jitinfer::util::get_mkldnn_relu_pd(dst_desc, eng);
+      relu_pd = deepfusion::util::get_mkldnn_relu_pd(dst_desc, eng);
       fwd_relu.reset(
           new mkldnn::eltwise_forward(*relu_pd, mkldnn_dst, mkldnn_dst));
       pp_concat.push_back(*fwd_relu);

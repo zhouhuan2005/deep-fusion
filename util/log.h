@@ -17,7 +17,7 @@
 #pragma once
 #include <stdio.h>
 
-namespace jitinfer {
+namespace deepfusion {
 
 #define __FILENAME__                                                       \
   (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 \

@@ -14,11 +14,11 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 #include "util_mkldnn.h"
 #include "util_test.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 struct test_conv_params {
   test_conv_params(int mb,

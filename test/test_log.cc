@@ -18,7 +18,7 @@
 #include "gtest/gtest.h"
 #include "log.h"
 
-namespace jitinfer {
+namespace deepfusion {
 
 TEST(TestLog, log) {
   log(stdout, test, "hello test with param %d", 1);

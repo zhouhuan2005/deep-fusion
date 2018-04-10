@@ -44,7 +44,7 @@ XDIS 9: PUSH      BASE       57                       push edi
 ```
 
 ### MinSizeRel
-This will only generate jitinfer library without any benchmark utilities and gtests. \
+This will only generate deepfusion library without any benchmark utilities and gtests. \
 `cmake .. -DCMAKE_BUILD_TYPE=MinSizeRel`
 
 ## Operators

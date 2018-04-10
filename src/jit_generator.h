@@ -30,7 +30,7 @@
  * FIXME: replace size_t parameters with the appropriate ones */
 #pragma warning(disable : 4267)
 #endif
-#include "util_jitinfer.h"
+#include "util_deepfusion.h"
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
 
@@ -38,8 +38,9 @@
   const char *name() const override { return #jit_name; } \
   const char *source_file() const override { return __FILE__; }
 
-namespace jitinfer {
+namespace deepfusion {
 namespace jit {
+
 static Xbyak::util::Cpu cpu;
 typedef enum {
   isa_any,

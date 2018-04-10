@@ -17,7 +17,7 @@
 #include <gflags/gflags.h>
 #include <mkldnn.hpp>
 #include <sstream>
-#include "jitinfer.h"
+#include "deepfusion.h"
 #include "log.h"
 #include "util_benchmark.h"
 #include "util_mkldnn.h"
