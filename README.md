@@ -50,8 +50,21 @@ This will only generate jitinfer library without any benchmark utilities and gte
 `cmake .. -DCMAKE_BUILD_TYPE=MinSizeRel`
 
 ## Operators
-1. concat and relu fusion.
-2. (TBD) conv relu and conv1x1relu fusion (will support VNNI).
+
+### 1. Concat and relu fusion.
+Support on AVX, AVX2 and AVX512
+
+### 2. Conv fusion
+conv relu and conv1x1relu fusion (will support VNNI).
+ - supported multi channel scales
+ - supported various data type
+
+  | Memory | Supported Data Type |
+  |---|--- |
+  | src | u8 |
+  | weight | s8 |
+  | bias | u8/s8/s32/f32 |
+  | dst | u8/s8/s32/f32 |
 
 ## Docker
 Docker images is provied for compiling and debuging.

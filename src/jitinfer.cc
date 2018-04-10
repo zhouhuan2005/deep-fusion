@@ -113,24 +113,28 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          const std::unique_ptr<memory> &bia1x1,
                          std::unique_ptr<memory> &dst,
                          bool conv0_relu,
-                         bool conv1_relu,
                          std::vector<float> conv0_scales,
-                         std::vector<float> conv1_scales) {
+                         round_mode conv0_round_mode,
+                         bool conv1_relu,
+                         std::vector<float> conv1_scales,
+                         round_mode conv1_round_mode) {
   switch (dst->data_type()) {
-#define CASE(tp)                                             \
-  case memory::dtype::tp:                                    \
-    return std::unique_ptr<op>(new op_conv<tp>(src,          \
-                                               wei,          \
-                                               bia,          \
-                                               sz_stride,    \
-                                               sz_padding,   \
-                                               dst,          \
-                                               conv0_scales, \
-                                               conv1_scales, \
-                                               wei1x1,       \
-                                               bia1x1,       \
-                                               conv0_relu,   \
-                                               conv1_relu))
+#define CASE(tp)                                                 \
+  case memory::dtype::tp:                                        \
+    return std::unique_ptr<op>(new op_conv<tp>(src,              \
+                                               wei,              \
+                                               bia,              \
+                                               sz_stride,        \
+                                               sz_padding,       \
+                                               dst,              \
+                                               conv0_scales,     \
+                                               conv1_scales,     \
+                                               wei1x1,           \
+                                               bia1x1,           \
+                                               conv0_relu,       \
+                                               conv1_relu,       \
+                                               conv0_round_mode, \
+                                               conv1_round_mode))
     CASE(f32);
     CASE(s32);
     CASE(s8);
@@ -149,7 +153,8 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          std::array<int, 2> sz_padding,
                          std::unique_ptr<memory> &dst,
                          bool conv0_relu,
-                         std::vector<float> conv0_scales) {
+                         std::vector<float> conv0_scales,
+                         round_mode conv0_round_mode) {
   return conv(src,
               wei,
               bia,
@@ -159,7 +164,7 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
               nullptr,
               dst,
               conv0_relu,
-              false,
-              conv0_scales);
+              conv0_scales,
+              conv0_round_mode);
 }
 }

@@ -22,7 +22,7 @@ namespace jitinfer {
 template <typename dst_data_t>
 void op_conv<dst_data_t>::infer() {
   using namespace util;
-  const auto &jcp = kernel_->jcp_;
+  const auto &jcp = kernel_->jcp;
   if (fuse_conv1x1_) {
     ;
   } else {
@@ -44,7 +44,9 @@ bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
                                     const std::unique_ptr<memory> &wei1x1,
                                     const std::unique_ptr<memory> &bia1x1,
                                     bool conv0_relu,
-                                    bool conv1_relu) {
+                                    bool conv1_relu,
+                                    round_mode conv0_round_mode,
+                                    round_mode conv1_round_mode) {
   using namespace util;
   // check data type
   if (dst->data_type() != type2dtype<dst_data_t>::dtype) {
@@ -125,7 +127,9 @@ bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
                                          wei1x1,
                                          bia1x1,
                                          conv0_relu,
-                                         conv1_relu);
+                                         conv1_relu,
+                                         conv0_round_mode,
+                                         conv1_round_mode);
 }
 
 template class op_conv<f32>;

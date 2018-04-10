@@ -67,7 +67,7 @@ typedef enum {
   avx512_core_vnni,
   avx512_mic,
   avx512_mic_4ops,
-} cpu_isa_t;
+} cpu_isa_t;  // Instruction set architecture
 
 template <cpu_isa_t>
 struct cpu_isa_traits {}; /* ::vlen -> 32 (for avx2) */

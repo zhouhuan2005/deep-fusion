@@ -44,9 +44,9 @@ struct jit_conv_conf_t {
   int bs;
   int gp, ic, oc;
   int ih, iw, oh, ow;
-  int ph, pw;
   int kh, kw;
   int sh, sw;
+  int l_pad, t_pad;  // left, top padding
   int ic_block, oc_block;
   int nb_ic, nb_oc;
   // @note: nc_ic==(nb_ic_blocking * ic_chunk)
@@ -58,10 +58,12 @@ struct jit_conv_conf_t {
   int typesize_conv0_bia;
   int typesize_conv1_bia;
   memory::dtype dst_dt, conv0_bias_dt, conv1_bias_dt;
+  round_mode conv0_round_mode, conv1_round_mode;
   /* conv 1x1*/
   int oc1x1;
   int oc1x1_block;
   int nb_oc1x1;
+  bool use_vnni;
   bool fuse_conv1x1;
   bool conv0_with_relu;
   bool conv1_with_relu;

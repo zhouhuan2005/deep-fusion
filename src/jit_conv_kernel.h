@@ -26,7 +26,7 @@ namespace jit {
 struct jit_conv_kernel : public jit_generator {
   DECLARE_JIT_KERNEL(jit_conv_kernel);
 
-  jit_conv_kernel(jit_conv_conf_t ajcp) : jcp_(ajcp) {
+  jit_conv_kernel(jit_conv_conf_t ajcp) : jcp(ajcp) {
     generate();
     jit_ker_ = (void (*)(jit_conv_call_s *))getCode();
   }
@@ -44,9 +44,11 @@ struct jit_conv_kernel : public jit_generator {
                         const std::unique_ptr<memory> &wei1x1,
                         const std::unique_ptr<memory> &bia1x1,
                         bool conv0_relu,
-                        bool conv1_relu);
+                        bool conv1_relu,
+                        round_mode conv0_round_mode,
+                        round_mode conv1_round_mode);
 
-  jit_conv_conf_t jcp_;
+  jit_conv_conf_t jcp;
   void (*jit_ker_)(jit_conv_call_s *);
 
 private:
@@ -63,7 +65,6 @@ private:
   reg64_t reg_ker = r9;
   reg64_t reg_out = r10;  // when fuse 1x1, do not need 3x3 out
   reg64_t aux_reg_inp = r11;
-  reg64_t reg_ptr_sum_scale = r11;
   reg64_t aux_reg_ker = r12;
   reg64_t reg_acc_s32 = r13;
   reg64_t reg_scratch_3x3 = r14;
@@ -102,26 +103,26 @@ private:
   zmm_t zmm_1x1_wei = zmm_t(30);           // use zmm_bcast zmm
 
   zmm_t zmm_out(int i_ur, int i_oc) {
-    int idx = i_ur + i_oc * jcp_.ur_w;
+    int idx = i_ur + i_oc * jcp.ur_w;
     assert(idx < ker_reg_base_idx);
     return zmm_t(idx);
   }
   xmm_t xmm_out(int i_ur, int i_oc) {
-    int idx = i_ur + i_oc * jcp_.ur_w;
+    int idx = i_ur + i_oc * jcp.ur_w;
     assert(idx < ker_reg_base_idx);
     return xmm_t(idx);
   }
   zmm_t zmm_inp(int i_ic, int nb_x_blocking) {
-    int idx = i_ic + nb_x_blocking * jcp_.ur_w;
+    int idx = i_ic + nb_x_blocking * jcp.ur_w;
     assert(idx < 31);
     return zmm_t(idx);
   }
   int get_ow_start(int ki, int pad_l) {
-    return std::max(0, (pad_l - ki + jcp_.sw - 1) / jcp_.sw);
+    return std::max(0, (pad_l - ki + jcp.sw - 1) / jcp.sw);
   }
   int get_ow_end(int ur_w, int ki, int pad_r) {
     return ur_w -
-           std::max(0, (ki + pad_r - (jcp_.kw - 1) + jcp_.sw - 1) / jcp_.sw);
+           std::max(0, (ki + pad_r - (jcp.kw - 1) + jcp.sw - 1) / jcp.sw);
   }
   bool maybe_relu(int position);
   void prepare_output(int ur_w);
@@ -132,12 +133,12 @@ private:
   // 1x1 acc use 3x3 input. size is ur_w * zmm
   // rage: jcp.nb_oc_blocking * jcp.ur_w + (0 ~ ur_w)
   zmm_t zmm_1x1out(int jw) {
-    int idx = jw + jcp_.nb_oc_blocking * jcp_.ur_w;
+    int idx = jw + jcp.nb_oc_blocking * jcp.ur_w;
     assert(idx < ker_reg_base_idx);
     return zmm_t(idx);
   }
   xmm_t xmm_1x1out(int jw) {
-    int idx = jw + jcp_.nb_oc_blocking * jcp_.ur_w;
+    int idx = jw + jcp.nb_oc_blocking * jcp.ur_w;
     assert(idx < ker_reg_base_idx);
     return xmm_t(idx);
   }

@@ -43,6 +43,11 @@ struct opdesc {
   int tmp;
 };
 
+enum round_mode {
+  nearest = 0,
+  down,
+};
+
 struct memory {
 public:
   enum format {
@@ -115,7 +120,8 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          std::array<int, 2> sz_padding,
                          std::unique_ptr<memory> &dst,
                          bool conv0_relu = false,
-                         std::vector<float> conv0_scales = {1.f});
+                         std::vector<float> conv0_scales = {1.f},
+                         round_mode conv0_round_mode = round_mode::nearest);
 
 // conv and fuse conv1x1_relu
 std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
@@ -127,7 +133,9 @@ std::unique_ptr<op> conv(const std::unique_ptr<memory> &src,
                          const std::unique_ptr<memory> &bia1x1,
                          std::unique_ptr<memory> &dst,
                          bool conv0_relu = false,
-                         bool conv1_relu = false,
                          std::vector<float> conv0_scales = {1.f},
-                         std::vector<float> conv1_scales = {1.f});
+                         round_mode conv0_round_mode = round_mode::nearest,
+                         bool conv1_relu = false,
+                         std::vector<float> conv1_scales = {1.f},
+                         round_mode conv1_round_mode = round_mode::nearest);
 }

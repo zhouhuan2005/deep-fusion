@@ -43,7 +43,9 @@ public:
                    const std::unique_ptr<memory> &wei1x1 = nullptr,
                    const std::unique_ptr<memory> &bia1x1 = nullptr,
                    bool conv0_relu = false,
-                   bool conv1_relu = false)
+                   bool conv1_relu = false,
+                   round_mode conv0_round_mode = round_mode::nearest,
+                   round_mode conv1_round_mode = round_mode::nearest)
       : op(), fuse_conv1x1_(wei1x1 != nullptr) {
     jit::jit_conv_conf_t conf;
     if (!init_conf(conf,
@@ -59,12 +61,14 @@ public:
                    wei1x1,
                    bia1x1,
                    conv0_relu,
-                   conv1_relu)) {
+                   conv1_relu,
+                   conv0_round_mode,
+                   conv1_round_mode)) {
       error_and_exit("Init Conv op failed!");
     }
 
     kernel_ = new jit::jit_conv_kernel(conf);
-    const auto &jcp = kernel_->jcp_;
+    const auto &jcp = kernel_->jcp;
     const int nthreads = omp_get_max_threads();
     ws_per_thread_ = jcp.oh * jcp.ow * jcp.oc_block * jcp.nb_oc_blocking;
     ws_ = (acc_data_t *)aligned_malloc(
@@ -96,7 +100,9 @@ protected:
                  const std::unique_ptr<memory> &wei1x1,
                  const std::unique_ptr<memory> &bia1x1,
                  bool conv0_relu,
-                 bool conv1_relu);
+                 bool conv1_relu,
+                 round_mode conv0_round_mode,
+                 round_mode conv1_round_mode);
   void infer() override;
   const char *name() { return "conv"; }
 
