@@ -423,7 +423,7 @@ void jit_conv_kernel::generate() {
 
   mov(reg_inp, ptr[param1 + GET_OFF(src)]);
   if (jcp.fuse_conv1x1) {
-    mov(reg_ptr_out1x1, ptr[param1 + GET_OFF(out1x1)]);
+    mov(reg_ptr_out1x1, ptr[param1 + GET_OFF(dst)]);
     mov(reg_ptr_acc1x1, ptr[param1 + GET_OFF(acc1x1)]);
   } else {
     mov(reg_out, ptr[param1 + GET_OFF(dst)]);
