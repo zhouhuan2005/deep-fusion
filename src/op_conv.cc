@@ -32,6 +32,7 @@ void op_conv<dst_data_t>::infer_conv0() {
   using namespace util;
   const auto &jcp = kernel_->jcp;
   assert(jcp.nb_oc % jcp.nb_oc_blocking == 0);
+  // bias data type can be any of u8,s8,s32,f32
   auto bias_data = reinterpret_cast<const char *>(bia_data_);
 
 #pragma omp parallel
@@ -138,7 +139,122 @@ template <typename dst_data_t>
 void op_conv<dst_data_t>::infer_conv0conv1() {
   using namespace util;
   const auto &jcp = kernel_->jcp;
-  ;
+  assert(jcp.nb_oc % jcp.nb_oc_blocking == 0);
+  assert(jcp.oc1x1 == jcp.nb_oc1x1 * jcp.oc1x1_block);
+  // bias data type can be any of u8,s8,s32,f32
+  auto bias_data = reinterpret_cast<const char *>(bia_data_);
+
+#pragma omp parallel
+  {
+    int ithr = omp_get_thread_num(), nthr = omp_get_num_threads();
+    int oc_chunks = jcp.nb_oc / jcp.nb_oc_blocking;
+    int ic_chunks = jcp.nb_ic / jcp.nb_ic_blocking;
+    int start{0}, end{0};
+    int work_amount = jcp.bs * jcp.gp * jcp.oh;
+    balance211(work_amount, nthr, ithr, start, end);
+
+    jit::jit_conv_call_s p = {0};
+    auto ws_l = ws_ + ithr * ws_per_thread_;
+    auto ws1x1_l = ws1x1_ + ithr * ws1x1_per_thread_;
+
+    size_t src_h_stride = jcp.iw * jcp.ic;
+    size_t out1x1_h_stride = jcp.ow * jcp.oc1x1;
+    size_t acc1x1_h_stride = jcp.ow * jcp.oc1x1;
+    size_t wht_h_stride = jcp.kw;
+    size_t wht_ic_stride = jcp.kh * jcp.kw;
+
+    int n{0}, g{0}, oh_s{0};
+    if (jcp.loop_order == loop_cgn) {  // this is default
+      nd_iterator_init(start, g, jcp.gp, n, jcp.bs, oh_s, jcp.oh);
+    } else if (jcp.loop_order == loop_gnc) {
+      nd_iterator_init(start, g, jcp.gp, n, jcp.bs, oh_s, jcp.oh);
+    } else if (jcp.loop_order == loop_ngc) {
+      nd_iterator_init(start, n, jcp.bs, g, jcp.gp, oh_s, jcp.oh);
+    } else {
+      assert(!"unsupported loop order");
+    }
+
+    while (start < end) {
+      auto out1x1_w = dst_data_ + n * (jcp.oh * out1x1_h_stride) +
+                      oh_s * out1x1_h_stride;  // nhwc
+      auto acc1x1_w = ws1x1_l + oh_s * acc1x1_h_stride;
+      auto scales1x1 = conv1_scales_data_;
+      assert(conv1_scales_data_);
+
+      for (int occ = 0; occ < oc_chunks; ++occ) {
+        int ocb = occ * jcp.nb_oc_blocking;
+        // format is OIhw4i16o4i. [oc1x1/16,ic1x1/16, 4i,16o,4i]
+        auto wei1x1_c = wei1x1_data_ + ocb * 4 * 64;
+        int g_oc = (g * jcp.nb_oc + ocb) * jcp.oc_block;
+        int g_ic = g * jcp.nb_ic * jcp.oc_block;
+        int work_rem = end - start;
+        int ih_s = -jcp.t_pad + oh_s * jcp.sh;
+        int oh_e = oh_s + work_rem > jcp.oh ? jcp.oh : oh_s + work_rem;
+
+        auto bias_w = bias_data
+                          ? bias_data + ((size_t)g_oc * jcp.oc / jcp.gp *
+                                         jcp.typesize_conv0_bia)
+                          : 0;
+        auto src_w = src_data_ + (size_t)n * jcp.ic * jcp.ih * jcp.iw +
+                     g_ic * jcp.ih * jcp.iw + ih_s * jcp.iw;
+        auto wht_w =
+            wei_data_ + (jcp.gp > 1 ? ((size_t)g * jcp.oc * jcp.ic * jcp.kh *
+                                           jcp.kw / jcp.gp +
+                                       ocb * jcp.ic * jcp.kh * jcp.kw / jcp.gp)
+                                    : ((size_t)ocb * jcp.ic * jcp.kh * jcp.kw));
+        auto scales =
+            conv0_scales_data_ ? conv0_scales_data_ + g_oc : conv0_scales_data_;
+
+        for (int icc = 0; icc < ic_chunks; ++icc) {
+          auto src_c = src_w;
+          auto out1x1_c = out1x1_w;
+          auto acc1x1_c = acc1x1_w;
+          auto ws_c = ws_l;
+
+          int icb = icc * jcp.nb_ic_blocking;
+          for (int oj = oh_s, ij = ih_s; oj < oh_e; ++oj, ij += jcp.sh) {
+            int i_t_overflow = -std::min(0, ij);
+            int i_b_overflow = std::max(jcp.ih, ij + jcp.kh) - jcp.ih;
+            int kh_padding = std::max(0, jcp.kh - i_t_overflow - i_b_overflow);
+
+            p.src = src_c + i_t_overflow * src_h_stride;
+            p.wei = wht_w + i_t_overflow * wht_h_stride;
+            p.bia = bias_w;
+            p.acc_s32 = ws_c;
+            p.channel = icb;
+            p.kh_padding = kh_padding;
+            p.scales = scales;
+
+            p.ocb3x3 = ocb;
+            p.wei1x1 = wei1x1_c;  // oc1x1/16,ic1x1/4, 16o,4i
+            p.bia1x1 = bia1x1_data_;
+            p.acc1x1 = acc1x1_c;  // acc1x1 format is (oh, oc1x1/16, ow, 16o),
+                                  // ow is in kernel, so do not need offset
+            p.dst = out1x1_c;     // shoud have ow offset in kernel
+            p.scales1x1 = scales1x1;
+
+            kernel_->jit_ker_(&p);
+
+            src_c += src_h_stride * jcp.sh;
+            out1x1_c += out1x1_h_stride;
+            acc1x1_c += acc1x1_h_stride;
+            ws_c += jcp.ow * jcp.oc_block * jcp.nb_oc_blocking;
+          }
+          src_w += jcp.ic_block * jcp.nb_ic_blocking;
+          wht_w += wht_ic_stride * jcp.nb_ic_blocking;
+        }
+      }
+      if (jcp.loop_order == loop_cgn) {
+        nd_iterator_jump(start, end, g, jcp.gp, n, jcp.bs, oh_s, jcp.oh);
+      } else if (jcp.loop_order == loop_gnc) {
+        nd_iterator_jump(start, end, g, jcp.gp, n, jcp.bs, oh_s, jcp.oh);
+      } else if (jcp.loop_order == loop_ngc) {
+        nd_iterator_jump(start, end, n, jcp.bs, g, jcp.gp, oh_s, jcp.oh);
+      } else {
+        assert(!"unsupported loop order");
+      }
+    }
+  }
 }
 
 template <typename dst_data_t>

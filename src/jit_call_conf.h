@@ -51,14 +51,12 @@ struct jit_conv_call_s {
   const void *wei1x1;
   const void *bia1x1;
   const void *acc1x1;
-  const void *out1x1;
+  // const void *out1x1; == dst
   const void *scales1x1;
   size_t ocb3x3;
 
   size_t kh_padding;
-  size_t kw_padding;
   size_t channel;
-  size_t oc_blocks;
 };
 
 struct jit_conv_conf_t {
