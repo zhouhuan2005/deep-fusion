@@ -63,6 +63,7 @@ cmake .. -DCMAKE_BUILD_TYPE=MinSizeRel
  - [x] conv3x3+relu+conv1x1+relu fused op
    - supported multi channel scales
    - supported various data type
+
 | Memory | Supported Data Type |
 |---|--- |
 | src | u8 |
