@@ -42,4 +42,5 @@ TEST(TestUtil, test_util) {
   EXPECT_FALSE(all_true(1, 1, 0, false));
   EXPECT_FALSE(all_true(false, 1, 0, true));
 }
+
 }

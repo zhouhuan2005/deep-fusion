@@ -219,8 +219,7 @@ int main(int argc, char** argv) {
       dims[2] = FLAGS_h;
       dims[3] = FLAGS_w;
     }
-    bench_both(
-        test_case, deepfusion::util::str2dtype(FLAGS_dtype), FLAGS_post_relu);
+    bench_both(test_case, deepfusion::util::str2dtype(FLAGS_dtype), FLAGS_post_relu);
     return 0;
   }
 

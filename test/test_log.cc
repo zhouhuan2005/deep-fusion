@@ -44,6 +44,7 @@ TEST(TestLog, log) {
   check_gt(3, 2);
   check_ge(3, 1);
   check_ge(3, 3);
+
   /*
     // add string
     check(1 == 1, "test check with param %d", 1);
@@ -59,4 +60,5 @@ TEST(TestLog, log) {
     check_ge(1, 1, "test check_ge");
   */
 }
+
 }
