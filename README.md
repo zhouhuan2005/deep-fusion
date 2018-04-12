@@ -63,12 +63,12 @@ cmake .. -DCMAKE_BUILD_TYPE=MinSizeRel
  - [x] conv3x3+relu+conv1x1+relu fused op
    - supported multi channel scales
    - supported various data type
-   | Memory | Supported Data Type |
-   |---|--- |
-   | src | u8 |
-   | weight | s8 |
-   | bias | u8/s8/s32/f32 |
-   | dst | u8/s8/s32/f32 |
+| Memory | Supported Data Type |
+|---|--- |
+| src | u8 |
+| weight | s8 |
+| bias | u8/s8/s32/f32 |
+| dst | u8/s8/s32/f32 |
 
 ## Docker
 Docker images is provied for compiling and debuging.
