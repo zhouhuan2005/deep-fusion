@@ -75,14 +75,13 @@ int _getenv(char *value, const char *name, int length) {
 static bool profiling = false;
 // when need profiling
 // 1. cmake -DWITH_VERBOSE=ON
-// 2. export JITINFER_VERBOSE=1
+// 2. export DEEPFUSION_VERBOSE=1
 bool profiling_time() {
   static bool initialized = false;
   if (!initialized) {
     const int len = 2;
     char env_dump[len] = {0};
-    profiling =
-        _getenv(env_dump, "JITINFER_VERBOSE", len) == 1 && atoi(env_dump) == 1;
+    profiling =_getenv(env_dump, "DEEPFUSION_VERBOSE", len) == 1 && atoi(env_dump) == 1;
     initialized = true;
   }
   return profiling;
@@ -91,13 +90,13 @@ bool profiling_time() {
 static bool dump_jit_code = false;
 // when need dump jit code
 // 1. cmake -DCMAKE_BUILD_TYPE=DEBUG
-// 2. export JITINFER_DUMP_CODE=1
+// 2. export DEEPFUSION_DUMP_CODE=1
 bool jit_dump_code() {
   static bool initialized = false;
   if (!initialized) {
     const int len = 2;
     char env_dump[len] = {0};
-    dump_jit_code = _getenv(env_dump, "JITINFER_DUMP_CODE", len) == 1 &&
+    dump_jit_code = _getenv(env_dump, "DEEPFUSION_DUMP_CODE", len) == 1 &&
                     atoi(env_dump) == 1;
     initialized = true;
   }
@@ -105,4 +104,4 @@ bool jit_dump_code() {
 }
 }
 }
-}
+
