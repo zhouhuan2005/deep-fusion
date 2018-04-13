@@ -58,20 +58,14 @@ This will only generate deepfusion library without any benchmark utilities and g
 cmake .. -DCMAKE_BUILD_TYPE=MinSizeRel
 ```
 
-## Supported Operators
- - [x] concat+relu fused op (u8/s8/s32/f32|AVX, AVX2 and AVX512)
- - [x] conv3x3+relu+conv1x1+relu fused op
-   - supported multi channel scales
-   - supported various data type
+## Operators Support LIST
+ - [x] concat+relu fused op (AVX/AVX2/AVX512)
+ - [x] conv3x3+relu+conv1x1+relu fused op (AVX512)
+ - [ ] conv+relu+pooling fused op
+ - [ ] eltwise-sum + relu fused op
 
-| Memory | Supported Data Type |
-|---|--- |
-| src | u8 |
-| weight | s8 |
-| bias | u8/s8/s32/f32 |
-| dst | u8/s8/s32/f32 |
-
-## Docker
-Docker images is provied for compiling and debuging.
- - `docker pull tensortang/ubuntu` for gcc8.0, gdb and some necessary env.
- - `docker pull tensortang/ubuntu:16.04` for gcc5.4
+## Supported Data Types
+| op | data\_in | weight | bias | scale | data\_out |
+| :--: | :--: | :--: | :--: | :--: | :--: |
+| concat+relu | u8/s8/s32/f32 | N/A | N/A | N/A | u8/s8/s32/f32 |
+| conv3x3+relu+conv1x1+relu | u8 | s8 | u8/s8/s32/f32 | f32 | u8/s8/s32/f32 |
