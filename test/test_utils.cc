@@ -14,32 +14,30 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "util_benchmark.h"
-#include <sstream>
+#include "test_utils.h"
 #include "log.h"
-#include "omp_thread.h"
 
 namespace deepfusion {
-namespace util {
+namespace testutils {
 
 #ifdef WITH_COLD_CACHE
 dummy_memory::dummy_memory(size_t num_bytes) {
   int max_nthr = omp_get_max_threads();
   debug("Max OMP threads: %d", max_nthr);
   size_ = num_bytes * max_nthr;
-  p_ = (unsigned char*)aligned_malloc(size_, 64);
+  p_ = (unsigned char*)deepfusion::utils::aligned_malloc(size_, 64);
 }
 
 dummy_memory::~dummy_memory() { free(p_); }
 
 void dummy_memory::clear_cache() {
-#pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static)
   for (size_t i = 0; i < size_; ++i) {
     p_[i] = p_[i] * 2;
   }
 }
 
-// skx, L3: 1.375MB * n
+// SKX, L3: 1.375MB * n
 //      L2: 1MB
 //      L1: 32KB
 constexpr size_t PAGE_2MB = 2 * 1024 * 1024;
@@ -94,5 +92,53 @@ std::vector<std::string> split(const std::string& s, char delimiter) {
   }
   return tokens;
 }
+
+std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(
+    const mkldnn::memory::desc md, const mkldnn::engine& eng) {
+  using namespace mkldnn;
+  auto relu_desc = eltwise_forward::desc(
+      prop_kind::forward_inference, algorithm::eltwise_relu, md, 0.f, 0.f);
+  return std::unique_ptr<eltwise_forward::primitive_desc>(
+      new eltwise_forward::primitive_desc(relu_desc, eng));
+}
+
+memory::dtype from_mkldnn_dtype(mkldnn::memory::data_type dt) {
+  switch (dt) {
+#define CASE(tp)                      \
+  case mkldnn::memory::data_type::tp: \
+    return memory::dtype::tp
+    CASE(f32);
+    CASE(s32);
+    CASE(s8);
+    CASE(u8);
+#undef CASE
+    default:
+      error_and_exit("Unkown type %d", dt);
+  }
+}
+
+mkldnn::memory::data_type to_mkldnn_dtype(memory::dtype dt) {
+  switch (dt) {
+#define CASE(tp)                    \
+  case deepfusion::memory::dtype::tp: \
+    return mkldnn::memory::data_type::tp
+    CASE(f32);
+    CASE(s32);
+    CASE(s8);
+    CASE(u8);
+#undef CASE
+    default:
+      error_and_exit("Unkown type %d", dt);
+  }
+}
+
+mkldnn::memory::dims to_mkldnn_dims(const memory::nchw_dims& nchwdims) {
+  mkldnn::memory::dims out(nchwdims.size());
+  for (size_t i = 0; i < out.size(); ++i) {
+    out[i] = nchwdims[i];
+  }
+  return out;
+}
+
 }
 }

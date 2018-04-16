@@ -24,25 +24,28 @@ namespace deepfusion {
 enum conv_loop_order_t { loop_cgn, loop_gnc, loop_ngc };
 
 namespace jit {
-struct jit_concat_call_s {
+
+// concat with optional relu fusion
+struct jit_concat_call_t {
   const void **src;
-  const int *nb_ic;
+  const int  *nb_ic;
   const void *dst;
 };
 
 struct jit_concat_conf_t {
-  int bs;
-  int h, w;
-  int oc;
-  int n_inputs;
+  int           bs;
+  int           h, w;
+  int           oc;
+  int           n_inputs;
   memory::dtype dt;
-  int typesize;
-  int block;      // u8: 64, s32: 16
-  int bits_size;  // 128, 256, 512 : xmm, ymm, zmm
-  bool with_relu;
+  int           typesize;
+  int           block;      // u8: 64, s32: 16
+  int           bits_size;  // 128, 256, 512 : xmm, ymm, zmm
+  bool          with_relu;
 };
 
-struct jit_conv_call_s {
+// convreluconv1x1relu
+struct jit_conv_call_t {
   const void *src;
   const void *dst; /* hack, non-const for forward */
   const void *wei;
@@ -94,5 +97,7 @@ struct jit_conv_conf_t {
   bool conv0_multi_oc_scale;  // whether use multi channel to scale oc
   bool conv1_multi_oc_scale;
 };
+
+
 }
 }

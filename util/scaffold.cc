@@ -14,33 +14,11 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "util.h"
+#include "deepfusion_utils.h"
 
 namespace deepfusion {
+namespace utils {
 
-void *aligned_malloc(size_t size, int alignment) {
-  void *ptr;
-
-#ifdef _WIN32
-  ptr = _aligned_malloc(size, alignment);
-  int rc = ptr ? 0 : -1;
-#else
-  int rc = ::posix_memalign(&ptr, alignment, size);
-#endif
-
-  return (rc == 0) ? ptr : 0;
-}
-
-void free(void *p) {
-#ifdef _WIN32
-  _aligned_free(p);
-#else
-  ::free(p);
-#endif
-}
-
-namespace util {
-namespace env {
 int _getenv(char *value, const char *name, int length) {
   int result = 0;
   int last_idx = 0;
@@ -72,27 +50,27 @@ int _getenv(char *value, const char *name, int length) {
   return result;
 }
 
-static bool profiling = false;
-// when need profiling
-// 1. cmake -DWITH_VERBOSE=ON
-// 2. export DEEPFUSION_VERBOSE=1
-bool profiling_time() {
+// If need profiling
+// 1. cmake -DWITH_PROFILE=ON
+// 2. export DEEPFUSION_PROFILE=1
+bool is_profiling() {
+  static bool profiling = false;
   static bool initialized = false;
   if (!initialized) {
     const int len = 2;
     char env_dump[len] = {0};
-    profiling =_getenv(env_dump, "DEEPFUSION_VERBOSE", len) == 1 && atoi(env_dump) == 1;
+    profiling =_getenv(env_dump, "DEEPFUSION_PROFILE", len) == 1 && atoi(env_dump) == 1;
     initialized = true;
   }
   return profiling;
 }
 
-static bool dump_jit_code = false;
-// when need dump jit code
+// If need dump jit code
 // 1. cmake -DCMAKE_BUILD_TYPE=DEBUG
 // 2. export DEEPFUSION_DUMP_CODE=1
 bool jit_dump_code() {
   static bool initialized = false;
+  static bool dump_jit_code = false;
   if (!initialized) {
     const int len = 2;
     char env_dump[len] = {0};
@@ -102,6 +80,6 @@ bool jit_dump_code() {
   }
   return dump_jit_code;
 }
-}
-}
 
+}
+}

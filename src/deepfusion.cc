@@ -15,9 +15,9 @@
 *******************************************************************************/
 
 #include "deepfusion.h"
+#include "deepfusion_utils.h"
 #include "op_concat.h"
 #include "op_conv.h"
-#include "util_deepfusion.h"
 
 namespace deepfusion {
 
@@ -43,8 +43,8 @@ memory::dims nchw2format(const memory::nchw_dims &dm,
     default:
       error_and_exit("bad type");
   }
-  check_eq(util::array_product<int>(dm.data(), dm.size()),
-           util::array_product<int>(out.data(), out.size()));
+  check_eq(utils::array_product<int>(dm.data(), dm.size()),
+           utils::array_product<int>(out.data(), out.size()));
   return out;
 }
 
@@ -57,31 +57,31 @@ memory::memory(const nchw_dims &dm,
   allocate_buffer(alignment);
 }
 
-memory::~memory() { free(data_); }
+memory::~memory() { utils::aligned_free(data_); }
 
 void memory::allocate_buffer(int alignment) {
   assert(buffer_size() > 0);
-  data_ = aligned_malloc(buffer_size(), alignment);
+  data_ = utils::aligned_malloc(buffer_size(), alignment);
   assert(data_ != NULL);
 }
 
 size_t memory::size() {
-  return util::array_product<int>(dims_.data(), dims_.size());
+  return utils::array_product<int>(dims_.data(), dims_.size());
 }
 
-size_t memory::buffer_size() { return size() * util::dtype_size(dt_); }
+size_t memory::buffer_size() { return size() * utils::dtype_size(dt_); }
 
 void op::submit() {
 #ifdef WITH_VERBOSE
   double t_start = 0;
-  if (util::env::profiling_time()) {
-    t_start = util::timer::get_current_ms();
+  if (utils_is_profiling()) {
+    t_start = utils::get_current_ms();
   }
 #endif
   infer();
 #ifdef WITH_VERBOSE
-  if (util::env::profiling_time()) {
-    info("%s infer %f", this->name(), util::timer::get_current_ms() - t_start);
+  if (utils::is_profiling()) {
+    info("%s infer %f", this->name(), utils::get_current_ms() - t_start);
   }
 #endif
 }

@@ -15,12 +15,9 @@
 *******************************************************************************/
 
 #include <gflags/gflags.h>
-#include <mkldnn.hpp>
 #include <sstream>
-#include "deepfusion.h"
 #include "log.h"
-#include "util_benchmark.h"
-#include "util_mkldnn.h"
+#include "test_utils.h"
 
 DEFINE_int32(burning_iter, 50, "Burning iterations");
 DEFINE_int32(iter, 100, "Iterations for average");
@@ -38,11 +35,13 @@ struct bench_params {
   std::vector<deepfusion::memory::nchw_dims> srcs_dims;
 };
 
+
 void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
                          const mkldnn::memory::dims& dst_dims,
                          mkldnn::memory::data_type dt,
                          bool post_relu) {
   using namespace mkldnn;
+
   std::unique_ptr<primitive> fwd_concat, fwd_relu;
   std::unique_ptr<concat::primitive_desc> concat_pd;
   std::unique_ptr<eltwise_forward::primitive_desc> relu_pd;
@@ -72,42 +71,42 @@ void bench_mkldnn_concat(const std::vector<mkldnn::memory::dims>& srcs_dims,
   for (size_t i = 0; i < srcs.size(); i++) {
     inputs.push_back(srcs[i]);
   }
-  fwd_concat.reset(new mkldnn::concat(*concat_pd, inputs, dst));
+  fwd_concat.reset(new concat(*concat_pd, inputs, dst));
   pp_concat.clear();
   pp_concat.push_back(*fwd_concat);
 
   if (post_relu) {
     // add relu
-    relu_pd = deepfusion::util::get_mkldnn_relu_pd(dst_desc, eng);
+    relu_pd = deepfusion::testutils::get_mkldnn_relu_pd(dst_desc, eng);
     fwd_relu.reset(new eltwise_forward(*relu_pd, dst, dst));
     pp_relu.clear();
     pp_relu.push_back(*fwd_relu);
   }
 
   for (auto i = 0; i < FLAGS_burning_iter; ++i) {
-    deepfusion::util::clear_cache();
+    deepfusion::testutils::clear_cache();
     stream(stream::kind::eager).submit(pp_concat).wait();
     if (post_relu) {
       stream(stream::kind::eager).submit(pp_relu).wait();
     }
-    deepfusion::util::clear_cache();
+    deepfusion::testutils::clear_cache();
   }
 
   // cal time
   double sum_concat = 0;
   double sum_relu = 0;
   for (auto i = 0; i < FLAGS_iter; ++i) {
-    deepfusion::util::clear_cache();
-    auto s1 = deepfusion::util::timer::get_current_ms();
+    deepfusion::testutils::clear_cache();
+    auto s1 = deepfusion::utils::get_current_ms();
     stream(stream::kind::eager).submit(pp_concat).wait();
-    auto s2 = deepfusion::util::timer::get_current_ms();
+    auto s2 = deepfusion::utils::get_current_ms();
     sum_concat += (s2 - s1);
     if (post_relu) {
       stream(stream::kind::eager).submit(pp_relu).wait();
-      auto s3 = deepfusion::util::timer::get_current_ms();
+      auto s3 = deepfusion::utils::get_current_ms();
       sum_relu += (s3 - s2);
     }
-    deepfusion::util::clear_cache();
+    deepfusion::testutils::clear_cache();
   }
 
   auto avg_concat = sum_concat / (double)FLAGS_iter;
@@ -140,19 +139,19 @@ void bench_deepfusion_concat(
   auto c = concat(srcs, dst, post_relu);
 
   for (auto i = 0; i < FLAGS_burning_iter; ++i) {
-    util::clear_cache();
+    testutils::clear_cache();
     c->submit();
-    util::clear_cache();
+    testutils::clear_cache();
   }
 
   double sum_concat = 0;
   for (auto i = 0; i < FLAGS_iter; ++i) {
-    util::clear_cache();
-    auto s1 = util::timer::get_current_ms();
+    testutils::clear_cache();
+    auto s1 = utils::get_current_ms();
     c->submit();
-    auto s2 = util::timer::get_current_ms();
+    auto s2 = utils::get_current_ms();
     sum_concat += (s2 - s1);
-    util::clear_cache();
+    testutils::clear_cache();
   }
 
   std::ostringstream oss;
@@ -174,7 +173,7 @@ void bench_both(const bench_params& p,
   dst_dims[3] = srcs_dims[0][3];
   std::ostringstream oss;
   info("==========================================");
-  oss << "Benchmark with data type " << deepfusion::util::dtype2str(dt)
+  oss << "Benchmark with data type " << deepfusion::testutils::dtype2str(dt)
       << (post_relu ? ", with ReLU" : " without ReLU");
   oss << "\nData sizes: In";
   for (size_t i = 0; i < srcs_dims.size(); i++) {
@@ -189,15 +188,15 @@ void bench_both(const bench_params& p,
     }
     oss << "(" << dims[0] << ", " << dims[1] << ", " << dims[2] << ", "
         << dims[3] << ")@NCHW, ";
-    mkldnn_srcs_dims[i] = deepfusion::util::exchange::dims(dims);
+    mkldnn_srcs_dims[i] = deepfusion::testutils::to_mkldnn_dims(dims);
   }
   oss << "==> Out(" << dst_dims[0] << ", " << dst_dims[1] << ", " << dst_dims[2]
       << ", " << dst_dims[3] << ")@NCHW";
   info("%s", oss.str().c_str());
-  mkldnn_dst_dims = deepfusion::util::exchange::dims(dst_dims);
+  mkldnn_dst_dims = deepfusion::testutils::to_mkldnn_dims(dst_dims);
   bench_mkldnn_concat(mkldnn_srcs_dims,
                       mkldnn_dst_dims,
-                      deepfusion::util::exchange::dtype(dt),
+                      deepfusion::testutils::to_mkldnn_dtype(dt),
                       post_relu);
   bench_deepfusion_concat(srcs_dims, dst_dims, dt, post_relu);
 }
@@ -208,7 +207,7 @@ int main(int argc, char** argv) {
   // for example:
   // bench_concat -n 3 -c 16,16,64 -h 4 -w 6 -dtype s8 -post_relu
   if (!FLAGS_c.empty()) {
-    auto ics = deepfusion::util::split(FLAGS_c);
+    auto ics = deepfusion::testutils::split(FLAGS_c);
     bench_params test_case;
     test_case.srcs_dims.resize(ics.size());
     for (size_t i = 0; i < ics.size(); ++i) {
@@ -219,7 +218,7 @@ int main(int argc, char** argv) {
       dims[2] = FLAGS_h;
       dims[3] = FLAGS_w;
     }
-    bench_both(test_case, deepfusion::util::str2dtype(FLAGS_dtype), FLAGS_post_relu);
+    bench_both(test_case, deepfusion::testutils::str2dtype(FLAGS_dtype), FLAGS_post_relu);
     return 0;
   }
 

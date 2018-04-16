@@ -14,34 +14,33 @@
 * limitations under the License.
 *******************************************************************************/
 
-#pragma once
-
-#include "deepfusion.h"
-#include "util.h"
+#include "gtest/gtest.h"
+#include "test_utils.h"
 
 namespace deepfusion {
-namespace util {
 
-void clear_cache();
+TEST(TestMisc, test_misc) {
+  using namespace utils;
 
-#ifdef WITH_COLD_CACHE
-struct dummy_memory {
-public:
-  void clear_cache();
-  explicit dummy_memory(size_t n);
-  ~dummy_memory();
+  EXPECT_EQ(dividable_of(12, 5, 4, 3, 2), 4);
+  EXPECT_EQ(dividable_of(12, 3, 4, 5, 2), 3);
+  EXPECT_EQ(dividable_of(5, 3, 2), 1);
 
-private:
-  unsigned char* p_;
-  size_t size_;
-  DISABLE_COPY_AND_ASSIGN(dummy_memory);
-};
-#endif
+  EXPECT_EQ(find_dividable(14, 8), 7);
+  EXPECT_EQ(find_dividable(12, 5), 4);
+  EXPECT_EQ(find_dividable(12, 3), 3);
+  EXPECT_EQ(find_dividable(5, 4), 1);
+  EXPECT_EQ(find_dividable(5, 5), 5);
+  EXPECT_EQ(find_dividable(5, 8), 5);
 
-const char* dtype2str(memory::dtype dt);
-memory::dtype str2dtype(const std::string& str);
-memory::dtype str2dtype(const char* str);
-std::vector<std::string> split(const std::string& s, char delimiter = ',');
+  EXPECT_TRUE(all_true(true));
+  EXPECT_TRUE(all_true(1, 1, 1, true));
+  EXPECT_TRUE(all_true(true, 1, 1, 1, true));
 
+  EXPECT_FALSE(all_true(false));
+  EXPECT_FALSE(all_true(1, 0, true));
+  EXPECT_FALSE(all_true(1, 1, 0, false));
+  EXPECT_FALSE(all_true(false, 1, 0, true));
 }
+
 }

@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-
 #pragma once
 
 #include <type_traits>
@@ -30,7 +29,8 @@
  * FIXME: replace size_t parameters with the appropriate ones */
 #pragma warning(disable : 4267)
 #endif
-#include "util_deepfusion.h"
+
+#include "deepfusion_utils.h"
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
 
@@ -62,18 +62,21 @@ struct cpu_isa_traits<sse42> {
   static constexpr int vlen = 16;
   static constexpr int n_vregs = 16;
 };
+
 template <>
 struct cpu_isa_traits<avx2> {
   static constexpr int vlen_shift = 5;
   static constexpr int vlen = 32;
   static constexpr int n_vregs = 16;
 };
+
 template <>
 struct cpu_isa_traits<avx512_common> {
   static constexpr int vlen_shift = 6;
   static constexpr int vlen = 64;
   static constexpr int n_vregs = 32;
 };
+
 template <>
 struct cpu_isa_traits<avx512_core> : public cpu_isa_traits<avx512_common> {};
 
@@ -298,5 +301,6 @@ public:
     return (const F)getCode();
   }
 };
+
 }
 }

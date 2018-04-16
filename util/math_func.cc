@@ -14,26 +14,10 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "util_deepfusion.h"
+#include "deepfusion_utils.h"
 
 namespace deepfusion {
-namespace util {
-
-size_t dtype_size(memory::dtype dt) {
-  switch (dt) {
-#define CASE(tp) \
-  case tp:       \
-    return sizeof(typename dtype2type<tp>::type)
-    CASE(memory::dtype::f32);
-    CASE(memory::dtype::s32);
-    CASE(memory::dtype::s8);
-    CASE(memory::dtype::u8);
-#undef CASE
-    default:
-      assert(!"Unkown data type");
-      return 0;
-  }
-}
+namespace utils {
 
 int conv_output_size(int image, int kernel, int stride, int padding) {
   return (image + 2 * padding - kernel) / stride + 1;

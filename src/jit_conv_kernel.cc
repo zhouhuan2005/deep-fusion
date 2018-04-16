@@ -15,9 +15,9 @@
 *******************************************************************************/
 
 #include "jit_conv_kernel.h"
-#include "util_deepfusion.h"
+#include "deepfusion_utils.h"
 
-#define GET_OFF(field) offsetof(jit_conv_call_s, field)
+#define GET_OFF(field) offsetof(jit_conv_call_t, field)
 
 namespace deepfusion {
 namespace jit {
@@ -525,7 +525,7 @@ bool jit_conv_kernel::init_conf(jit_conv_conf_t &jcp,
                                 bool conv1_relu,
                                 round_mode conv0_round_mode,
                                 round_mode conv1_round_mode) {
-  using namespace util;
+  using namespace utils;
   jcp = zero<decltype(jcp)>();
   // Check data type
   if (!all_true(src->data_type() == memory::dtype::u8,

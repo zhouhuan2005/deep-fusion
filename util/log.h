@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-
 #pragma once
+
 #include <stdio.h>
 
 namespace deepfusion {
@@ -23,7 +23,7 @@ namespace deepfusion {
   (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 \
                                     : __FILE__)
 
-#define log(ter, type, fmt, ...)               \
+#define Log(ter, type, fmt, ...)               \
   fprintf(ter,                                 \
           "[" #type " %s %s:%d] >> " fmt "\n", \
           __TIME__,                            \
@@ -31,20 +31,20 @@ namespace deepfusion {
           __LINE__,                            \
           ##__VA_ARGS__)  //; fflush(stdout)
 
-#define info(fmt, ...) log(stdout, INFO, fmt, ##__VA_ARGS__)
+#define info(fmt, ...) Log(stdout, INFO, fmt, ##__VA_ARGS__)
 
-#define warning(fmt, ...) log(stdout, WARNING, fmt, ##__VA_ARGS__)
+#define warning(fmt, ...) Log(stdout, WARNING, fmt, ##__VA_ARGS__)
 
 #define error_and_exit(fmt, ...)            \
   {                                         \
-    log(stderr, ERROR, fmt, ##__VA_ARGS__); \
+    Log(stderr, ERROR, fmt, ##__VA_ARGS__); \
     exit(EXIT_FAILURE);                     \
   }
 
 #ifdef NDEBUG
 #define debug(fmt, ...)
 #else
-#define debug(fmt, ...) log(stdout, DEBUG, fmt, ##__VA_ARGS__)
+#define debug(fmt, ...) Log(stdout, DEBUG, fmt, ##__VA_ARGS__)
 #endif
 
 #define check(x) \
@@ -63,4 +63,5 @@ namespace deepfusion {
 #define check_lt(val0, val1) check_compare(val0, val1, <)
 
 #define check_le(val0, val1) check_compare(val0, val1, <=)
+
 }

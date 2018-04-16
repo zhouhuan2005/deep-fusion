@@ -27,7 +27,7 @@ struct jit_conv_kernel : public jit_generator {
 
   jit_conv_kernel(jit_conv_conf_t ajcp) : jcp(ajcp) {
     generate();
-    jit_ker_ = (void (*)(jit_conv_call_s *))getCode();
+    jit_ker_ = (void (*)(jit_conv_call_t *))getCode();
   }
 
   static bool init_conf(jit_conv_conf_t &jcp,
@@ -48,12 +48,13 @@ struct jit_conv_kernel : public jit_generator {
                         round_mode conv1_round_mode);
 
   jit_conv_conf_t jcp;
-  void (*jit_ker_)(jit_conv_call_s *);
+  void (*jit_ker_)(jit_conv_call_t *);
 
 private:
   enum {
     ker_reg_base_idx = 28,
   };
+
   using reg64_t = const Xbyak::Reg64;
   using reg32_t = const Xbyak::Reg32;
   using zmm_t = const Xbyak::Zmm;
@@ -88,16 +89,13 @@ private:
   reg64_t reg_ptr_out1x1 = r10;
   reg64_t aux_reg_ptr_acc1x1 = r11;  // this is a tmp_reg for acc1x1 add offset
   reg64_t reg_ptr_wei1x1 = r12;      // used reg_ptr_sum_scale reg
-  reg64_t reg_ptr_acc1x1 =
-      r14;  // use r14 which should always be used in kernel
+  reg64_t reg_ptr_acc1x1 = r14;  // use r14 which should always be used in kernel
   reg64_t reg_scratch_1x1 = r15;   // the r14 is used for acc1x1 for whole life
   reg64_t reg_ocb3x3 = r15;        // use reg_channel
   reg32_t reg_1x1_src_4u8 = r15d;  // use reg_channel reg
-  reg64_t aux_reg_ptr_wei1x1 =
-      rax;                          // use reg_kj, used only in 3x3 compute_loop
+  reg64_t aux_reg_ptr_wei1x1 = rax; // use reg_kj, used only in 3x3 compute_loop
   reg64_t reg_ptr_scales1x1 = rax;  // use reg_ptr_scales
-  reg64_t reg_ptr_bia1x1 =
-      rdx;  // use reg_bias, can use channel reg either i think
+  reg64_t reg_ptr_bia1x1 = rdx;  // use reg_bias, can use channel reg either i think
   zmm_t zmm_1x1_src_bcast_u8 = zmm_t(31);  // use use zero zmm
   zmm_t zmm_1x1_wei = zmm_t(30);           // use zmm_bcast zmm
 
@@ -106,23 +104,28 @@ private:
     assert(idx < ker_reg_base_idx);
     return zmm_t(idx);
   }
+
   xmm_t xmm_out(int i_ur, int i_oc) {
     int idx = i_ur + i_oc * jcp.ur_w;
     assert(idx < ker_reg_base_idx);
     return xmm_t(idx);
   }
+
   zmm_t zmm_inp(int i_ic, int nb_x_blocking) {
     int idx = i_ic + nb_x_blocking * jcp.ur_w;
     assert(idx < 31);
     return zmm_t(idx);
   }
+
   int get_ow_start(int ki, int pad_l) {
     return std::max(0, (pad_l - ki + jcp.sw - 1) / jcp.sw);
   }
+
   int get_ow_end(int ur_w, int ki, int pad_r) {
     return ur_w -
            std::max(0, (ki + pad_r - (jcp.kw - 1) + jcp.sw - 1) / jcp.sw);
   }
+
   bool maybe_relu(int position);
   void prepare_output(int ur_w);
   void store_output(int ur_w);
@@ -136,16 +139,19 @@ private:
     assert(idx < ker_reg_base_idx);
     return zmm_t(idx);
   }
+
   xmm_t xmm_1x1out(int jw) {
     int idx = jw + jcp.nb_oc_blocking * jcp.ur_w;
     assert(idx < ker_reg_base_idx);
     return xmm_t(idx);
   }
+
   void compute1x1_loop(int ur_w);
   void prepare_1x1output(int ur_w);
   void store_1x1output(int ur_w, int ocb1x1);
 
   void generate();
 };
+
 }
 }

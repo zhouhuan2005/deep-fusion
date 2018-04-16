@@ -15,9 +15,9 @@
 *******************************************************************************/
 
 #include "jit_concat_kernel.h"
-#include "util_deepfusion.h"
+#include "deepfusion_utils.h"
 
-#define GET_OFF(field) offsetof(jit_concat_call_s, field)
+#define GET_OFF(field) offsetof(jit_concat_call_t, field)
 
 // @note: do not use any MACRO or #define inside JIT kernel
 // it would have some uncertain issue in JIT, need figure out why
@@ -126,12 +126,13 @@ void jit_concat_kernel::generate() {
 
   postamble();
 }
+
 bool jit_concat_kernel::init_conf(
     jit_concat_conf_t& jcp,
     const std::vector<std::unique_ptr<memory>>& srcs,
     const std::unique_ptr<memory>& dst,
     bool post_relu) {
-  jcp = deepfusion::util::zero<decltype(jcp)>();
+  jcp = utils::zero<decltype(jcp)>();
 
   jcp.n_inputs = srcs.size();
   jcp.with_relu = post_relu;
@@ -141,12 +142,12 @@ bool jit_concat_kernel::init_conf(
   jcp.w = dm[2];
   jcp.oc = dm[3];
   jcp.dt = dst->data_type();
-  jcp.typesize = util::dtype_size(jcp.dt);
-  if (!util::one_of(jcp.typesize, 1, 4)) {
+  jcp.typesize = utils::dtype_size(jcp.dt);
+  if (!utils::one_of(jcp.typesize, 1, 4)) {
     // only s8, u8, s32, f32
     return false;
   }
-  if (!util::one_of(dst->dim_format(), memory::format::nhwc)) {
+  if (!utils::one_of(dst->dim_format(), memory::format::nhwc)) {
     // only support nhwc yet
     return false;
   }
@@ -189,10 +190,11 @@ bool jit_concat_kernel::init_conf(
   }
 
   jcp.bits_size = 8 * jcp.typesize * jcp.block;
-  if (!util::one_of(jcp.bits_size, USE_XMM, USE_YMM, USE_ZMM)) {
+  if (!utils::one_of(jcp.bits_size, USE_XMM, USE_YMM, USE_ZMM)) {
     return false;
   }
   return true;
 }
+
 }
 }

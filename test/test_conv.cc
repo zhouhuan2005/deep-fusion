@@ -14,9 +14,7 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "util_deepfusion.h"
-#include "util_mkldnn.h"
-#include "util_test.h"
+#include "test_utils.h"
 
 namespace deepfusion {
 

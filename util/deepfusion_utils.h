@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-
 #pragma once
 
 #include <assert.h>
@@ -23,15 +22,62 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+
+#include "deepfusion.h"
 #include "omp_thread.h"
+
 #ifdef WIN32
 #include <malloc.h>
 #include <windows.h>
 #endif
 
 namespace deepfusion {
+namespace utils {
 
-namespace util {
+// type(float, int8...) to deepfusion::memory::dtype
+template <typename T>
+struct type2dtype {};
+template <>
+struct type2dtype<f32> {
+  static const auto dtype = memory::dtype::f32;
+};
+template <>
+struct type2dtype<u8> {
+  static const auto dtype = memory::dtype::u8;
+};
+template <>
+struct type2dtype<s8> {
+  static const auto dtype = memory::dtype::s8;
+};
+template <>
+struct type2dtype<s32> {
+  static const auto dtype = memory::dtype::s32;
+};
+
+// deepfusion::memory::dtype to type(float, int8...)
+template <memory::dtype>
+struct dtype2type {};
+template <>
+struct dtype2type<memory::dtype::f32> {
+  typedef f32 type;
+};
+template <>
+struct dtype2type<memory::dtype::s32> {
+  typedef s32 type;
+};
+template <>
+struct dtype2type<memory::dtype::s8> {
+  typedef s8 type;
+};
+template <>
+struct dtype2type<memory::dtype::u8> {
+  typedef u8 type;
+};
+
+size_t dtype_size(memory::dtype dt);
+
+int conv_output_size(int image, int kernel, int stride, int padding);
+int pool_output_size(int image, int kernel, int stride, int padding);
 
 template <typename T>
 inline size_t array_product(const T *p, size_t num) {
@@ -46,6 +92,7 @@ template <typename T, typename P>
 inline bool one_of(T val, P item) {
   return val == item;
 }
+
 template <typename T, typename P, typename... Args>
 inline bool one_of(T val, P item, Args... item_others) {
   return val == item || one_of(val, item_others...);
@@ -105,10 +152,12 @@ template <typename T>
 struct remove_reference {
   typedef T type;
 };
+
 template <typename T>
 struct remove_reference<T &> {
   typedef T type;
 };
+
 template <typename T>
 struct remove_reference<T &&> {
   typedef T type;
@@ -119,10 +168,12 @@ inline typename remove_reference<T>::type div_up(const T a, const U b) {
   assert(b);
   return (a + b - 1) / b;
 }
+
 template <typename T>
 inline T &&forward(typename remove_reference<T>::type &t) {
   return static_cast<T &&>(t);
 }
+
 template <typename T>
 inline T &&forward(typename remove_reference<T>::type &&t) {
   return static_cast<T &&>(t);
@@ -160,6 +211,7 @@ template <typename T>
 inline T nd_iterator_init(T start) {
   return start;
 }
+
 template <typename T, typename U, typename W, typename... Args>
 inline T nd_iterator_init(T start, U &x, const W &X, Args &&... tuple) {
   start = nd_iterator_init(start, forward<Args>(tuple)...);
@@ -191,6 +243,7 @@ inline bool nd_iterator_jump(U &cur, const U end, W &x, const Y &X) {
     return false;
   }
 }
+
 template <typename U, typename W, typename Y, typename... Args>
 inline bool nd_iterator_jump(
     U &cur, const U end, W &x, const Y &X, Args &&... tuple) {
@@ -201,22 +254,18 @@ inline bool nd_iterator_jump(
   return false;
 }
 
-namespace timer {
 inline double get_current_ms() {
   struct timeval time;
   gettimeofday(&time, NULL);
   return 1e+3 * time.tv_sec + 1e-3 * time.tv_usec;
 };
-}
 
-namespace env {
 int _getenv(char *value, const char *name, int length);
-bool profiling_time();
+bool is_profiling();
 bool jit_dump_code();
-}
-}
 
 void *aligned_malloc(size_t size, int alignment);
-void free(void *p);
+void aligned_free(void *p);
 
+}
 }

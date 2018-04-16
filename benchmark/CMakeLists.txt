@@ -18,18 +18,16 @@ if(NOT ${WITH_BENCHMARK})
   return()
 endif()
 
-# add all *.cc to unit test
 file(GLOB BENCHMARK_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 
-set(util_bench_cc
-  ${PROJECT_SOURCE_DIR}/util/util_benchmark.cc
-  ${PROJECT_SOURCE_DIR}/util/util_mkldnn.cc
-  ${PROJECT_SOURCE_DIR}/util/util_deepfusion.cc
-  ${PROJECT_SOURCE_DIR}/util/util.cc)
-foreach(TEST_FILE ${BENCHMARK_SRCS})
-  get_filename_component(TEST_FILE_NAME ${TEST_FILE} NAME_WE)
-  set(EXE_NAME ${TEST_FILE_NAME})
-  add_executable(${EXE_NAME} ${TEST_FILE} ${util_bench_cc})
+set(TEST_UTILS
+  ${PROJECT_SOURCE_DIR}/test/test_utils.cc)
+
+foreach(BENCHMARK_FILE ${BENCHMARK_SRCS})
+  get_filename_component(BENCHMARK_FILE_NAME ${BENCHMARK_FILE} NAME_WE)
+  set(EXE_NAME ${BENCHMARK_FILE_NAME})
+  add_executable(${EXE_NAME} ${BENCHMARK_FILE} ${TEST_UTILS})
+  include_directories("${PROJECT_SOURCE_DIR}/test")
   target_link_libraries(${EXE_NAME} ${LIB_NAME}
     ${MKLML_LIB}
     ${MKLDNN_LIB}

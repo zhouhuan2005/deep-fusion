@@ -14,10 +14,7 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include "util_deepfusion.h"
-#include "util_mkldnn.h"
-#include "util_test.h"
-#include "deepfusion.h"
+#include "test_utils.h"
 
 using namespace deepfusion;
 
@@ -44,26 +41,26 @@ class test_concat : public ::testing::TestWithParam<test_concat_params> {
 
     int concat_dimension = 1; // some tricky, mkldnn always treats concat dim in MCHW order regardless memory format
     auto mkldnn_fmt = mkldnn::memory::format::nhwc;
-    auto mkldnn_dt = util::exchange::dtype(dst->data_type());
+    auto mkldnn_dt = testutils::to_mkldnn_dtype(dst->data_type());
 
     // srcs memory preparation
     std::vector<mkldnn::memory::primitive_desc> srcs_pd;
     std::vector<mkldnn::memory> mkldnn_srcs;
     for (size_t i = 0; i < srcs.size(); ++i) {
-      auto mkldnn_dims = util::exchange::dims(pm.srcs_dims[i]);
+      auto mkldnn_dims = testutils::to_mkldnn_dims(pm.srcs_dims[i]);
       auto desc = mkldnn::memory::desc(mkldnn_dims, mkldnn_dt, mkldnn_fmt);
       auto mpd = mkldnn::memory::primitive_desc(desc, eng);
       auto src_memory = mkldnn::memory(mpd);
       assert(srcs[i]->size() == src_memory.get_primitive_desc().get_size() / sizeof(dtype));
-      util::copy_array<dtype>((dtype*)(src_memory.get_data_handle()),
-                              (dtype*)(srcs[i]->data()),
-                              srcs[i]->size());
+      utils::copy_array<dtype>((dtype*)(src_memory.get_data_handle()),
+                               (dtype*)(srcs[i]->data()),
+                               srcs[i]->size());
       srcs_pd.push_back(mpd);
       mkldnn_srcs.push_back(src_memory);
     }
 
     // dst memory preparation
-    auto dst_desc = mkldnn::memory::desc(util::exchange::dims(pm.dst_dims), mkldnn_dt, mkldnn_fmt);
+    auto dst_desc = mkldnn::memory::desc(testutils::to_mkldnn_dims(pm.dst_dims), mkldnn_dt, mkldnn_fmt);
     concat_pd.reset(new mkldnn::concat::primitive_desc(dst_desc, concat_dimension, srcs_pd));
     auto mkldnn_dst = mkldnn::memory(concat_pd->dst_primitive_desc());
 
@@ -78,7 +75,7 @@ class test_concat : public ::testing::TestWithParam<test_concat_params> {
 
     // relu
     if (post_relu) {
-      relu_pd = util::get_mkldnn_relu_pd(dst_desc, eng);
+      relu_pd = testutils::get_mkldnn_relu_pd(dst_desc, eng);
       fwd_relu.reset(new mkldnn::eltwise_forward(*relu_pd, mkldnn_dst, mkldnn_dst));
       pp_concat.push_back(*fwd_relu);
     }
@@ -86,20 +83,20 @@ class test_concat : public ::testing::TestWithParam<test_concat_params> {
     mkldnn::stream(mkldnn::stream::kind::eager).submit(pp_concat).wait();
     dtype* ref_data = (dtype*)(mkldnn_dst.get_data_handle());
     dtype* jit_data = (dtype*)(dst->data());
-    util::compare_array<dtype>(jit_data, ref_data, dst->size());
+    testutils::compare_array<dtype>(jit_data, ref_data, dst->size());
   }
 
 protected:
   virtual void SetUp() {
     test_concat_params p = ::testing::TestWithParam<test_concat_params>::GetParam();
-    auto dt = util::type2dtype<dtype>::dtype;
+    auto dt = utils::type2dtype<dtype>::dtype;
     std::vector<std::unique_ptr<memory>> srcs(p.srcs_dims.size());
     std::unique_ptr<memory> dst;
     memory::format fmt = format::nhwc;
     for (size_t i = 0; i < p.srcs_dims.size(); ++i) {
       srcs[i].reset(new memory(p.srcs_dims[i], fmt, dt));
-      util::fill_data<dtype>(static_cast<dtype*>(srcs[i]->data()),
-                             srcs[i]->size());
+      testutils::fill_data<dtype>(static_cast<dtype*>(srcs[i]->data()),
+                                  srcs[i]->size());
     }
     dst.reset(new memory(p.dst_dims, fmt, dt));
 

@@ -15,12 +15,9 @@
 *******************************************************************************/
 
 #include <gflags/gflags.h>
-#include <mkldnn.hpp>
 #include <sstream>
-#include "deepfusion.h"
 #include "log.h"
-#include "util_benchmark.h"
-#include "util_mkldnn.h"
+#include "test_utils.h"
 
 DEFINE_int32(burning_iter, 50, "Burning iterations");
 DEFINE_int32(iter, 100, "Iterations for average");

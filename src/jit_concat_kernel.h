@@ -20,7 +20,6 @@
 #include "jit_generator.h"
 
 namespace deepfusion {
-
 namespace jit {
 
 struct jit_concat_kernel : public jit_generator {
@@ -28,7 +27,7 @@ struct jit_concat_kernel : public jit_generator {
 
   jit_concat_kernel(jit_concat_conf_t ajcp) : jcp_(ajcp) {
     generate();
-    jit_ker_ = (void (*)(jit_concat_call_s*))getCode();
+    jit_ker_ = (void (*)(jit_concat_call_t*))getCode();
   }
 
   static bool init_conf(jit_concat_conf_t& jcp,
@@ -37,7 +36,7 @@ struct jit_concat_kernel : public jit_generator {
                         bool post_relu);
 
   jit_concat_conf_t jcp_;
-  void (*jit_ker_)(jit_concat_call_s*);
+  void (*jit_ker_)(jit_concat_call_t*);
 
 private:
   enum {
@@ -45,6 +44,7 @@ private:
     USE_YMM = 256,
     USE_XMM = 128,
   };
+
   using reg64_t = const Xbyak::Reg64;
   using reg32_t = const Xbyak::Reg32;
   using zmm_t = const Xbyak::Zmm;
@@ -69,5 +69,6 @@ private:
   void compute_one_input();
   void generate();
 };
+
 }
 }

@@ -21,8 +21,8 @@
 namespace deepfusion {
 
 TEST(TestLog, log) {
-  log(stdout, test, "hello test with param %d", 1);
-  log(stdout, test, "hello test");
+  Log(stdout, TEST, "hello test with param %d", 1);
+  Log(stdout, TEST, "hello test");
   info("hello test with param %d", 1);
   info("hello test with param");
 

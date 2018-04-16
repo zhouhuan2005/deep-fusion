@@ -15,20 +15,21 @@
 *******************************************************************************/
 
 #include "op_concat.h"
-#include "util_deepfusion.h"
+#include "deepfusion_utils.h"
 
 namespace deepfusion {
 
 template <typename dtype>
 void op_concat<dtype>::infer() {
-  using namespace util;
+  using namespace utils;
+
   const auto &jcp = kernel_->jcp_;
 
   const int work_amount = jcp.bs * jcp.h * jcp.w;
   const int max = omp_get_max_threads();
 
   if (work_amount < max) {
-#pragma omp parallel for schedule(static) collapse(1)
+    #pragma omp parallel for schedule(static) collapse(1)
     for (int iwork = 0; iwork < max; ++iwork) {
       int n{0}, h{0}, w{0};
       nd_iterator_init(iwork, n, jcp.bs, h, jcp.h, w, jcp.w);
@@ -37,15 +38,15 @@ void op_concat<dtype>::infer() {
       for (int i = 0; i < jcp.n_inputs; ++i) {
         srcs[i] = srcs_data_[i] + (nhw * ic_[i]);
       }
-      jit::jit_concat_call_s p = {0};
+      jit::jit_concat_call_t p = {0};
       p.src = reinterpret_cast<const void **>(srcs);
       p.nb_ic = reinterpret_cast<const int *>(nb_ic_);
       p.dst = reinterpret_cast<void *>(dst_data_ + nhw * jcp.oc);
       kernel_->jit_ker_(&p);
     }
   } else {
-// if work amount > max omp threads, need balance
-#pragma omp parallel
+    // if work amount > max omp threads, need balance
+    #pragma omp parallel
     {
       int ithr = omp_get_thread_num(), nthr = omp_get_num_threads();
       int start{0}, end{0};
@@ -53,7 +54,7 @@ void op_concat<dtype>::infer() {
       int n{0}, h{0}, w{0};
       nd_iterator_init(start, n, jcp.bs, h, jcp.h, w, jcp.w);
       auto srcs = src_with_offset_ + ithr * jcp.n_inputs;
-      jit::jit_concat_call_s p = {0};
+      jit::jit_concat_call_t p = {0};
       for (int iwork = start; iwork < end; ++iwork) {
         int nhw = n * (jcp.h * jcp.w) + h * (jcp.w) + w;
         for (int i = 0; i < jcp.n_inputs; ++i) {
@@ -74,4 +75,5 @@ template class op_concat<f32>;
 template class op_concat<s32>;
 template class op_concat<s8>;
 template class op_concat<u8>;
+
 }

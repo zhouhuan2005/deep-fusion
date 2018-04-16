@@ -65,19 +65,19 @@ public:
                    conv1_round_mode)) {
       error_and_exit("Init Conv op failed!");
     }
+
     kernel_ = new jit::jit_conv_kernel(conf);
     const auto &jcp = kernel_->jcp;
     const int nthreads = omp_get_max_threads();
     ws_per_thread_ = jcp.oh * jcp.ow * jcp.oc_block * jcp.nb_oc_blocking;
-    ws_ = (acc_data_t *)aligned_malloc(
-        nthreads * ws_per_thread_ * sizeof(acc_data_t), 4096);  // 64??
+    ws_ = (acc_data_t *)utils::aligned_malloc(
+        nthreads * ws_per_thread_ * sizeof(acc_data_t), 4096);  // page align here
     // acc format (h, oc/16, ow, 16o)
     ws1x1_per_thread_ = jcp.oh * jcp.ow * jcp.oc1x1;
-    ws1x1_ = (acc_data_t *)aligned_malloc(
-        nthreads * ws1x1_per_thread_ * sizeof(acc_data_t), 4096);  // 64??
+    ws1x1_ = (acc_data_t *)utils::aligned_malloc(
+        nthreads * ws1x1_per_thread_ * sizeof(acc_data_t), 4096);  // page align here
 
-    // save data point
-    // TODO: enable update data handle from outside
+    // TODO enable update data handle from outside
     src_data_ = reinterpret_cast<const src_data_t *>(src->data());
     wei_data_ = reinterpret_cast<const wei_data_t *>(wei->data());
     dst_data_ = reinterpret_cast<dst_data_t *>(dst->data());
@@ -94,8 +94,8 @@ public:
   }
 
   ~op_conv() {
-    free(ws_);
-    free(ws1x1_);
+    utils::aligned_free(ws_);
+    utils::aligned_free(ws1x1_);
     delete kernel_;
   }
 
@@ -119,6 +119,7 @@ protected:
   void infer() override;
   inline void infer_conv0();
   inline void infer_conv0conv1();
+
   const char *name() { return "conv"; }
 
 private:
@@ -134,4 +135,5 @@ private:
   acc_data_t *ws_;
   acc_data_t *ws1x1_;
 };
+
 }

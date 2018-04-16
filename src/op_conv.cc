@@ -15,7 +15,7 @@
 *******************************************************************************/
 
 #include "op_conv.h"
-#include "util_deepfusion.h"
+#include "deepfusion_utils.h"
 
 namespace deepfusion {
 
@@ -30,13 +30,13 @@ void op_conv<dst_data_t>::infer() {
 
 template <typename dst_data_t>
 void op_conv<dst_data_t>::infer_conv0() {
-  using namespace util;
+  using namespace utils;
   const auto &jcp = kernel_->jcp;
   assert(jcp.nb_oc % jcp.nb_oc_blocking == 0);
   // bias data type can be any of u8,s8,s32,f32
   auto bias_data = reinterpret_cast<const char *>(bia_data_);
 
-#pragma omp parallel
+  #pragma omp parallel
   {
     int ithr = omp_get_thread_num(), nthr = omp_get_num_threads();
     int oc_chunks = jcp.nb_oc / jcp.nb_oc_blocking;
@@ -46,7 +46,7 @@ void op_conv<dst_data_t>::infer_conv0() {
     int work_amount = jcp.bs * jcp.gp * oc_chunks * jcp.oh;
     balance211(work_amount, nthr, ithr, start, end);
 
-    jit::jit_conv_call_s p = {0};
+    jit::jit_conv_call_t p = {0};
     auto ws_l = ws_ + ithr * ws_per_thread_;
     size_t src_h_stride = jcp.iw * jcp.ic;
     size_t dst_h_stride = jcp.ow * jcp.oc;
@@ -138,14 +138,14 @@ void op_conv<dst_data_t>::infer_conv0() {
 
 template <typename dst_data_t>
 void op_conv<dst_data_t>::infer_conv0conv1() {
-  using namespace util;
+  using namespace utils;
   const auto &jcp = kernel_->jcp;
   assert(jcp.nb_oc % jcp.nb_oc_blocking == 0);
   assert(jcp.oc1x1 == jcp.nb_oc1x1 * jcp.oc1x1_block);
-  // bias data type can be any of u8,s8,s32,f32
+  // bias data type can be any of u8, s8, s32, f32
   auto bias_data = reinterpret_cast<const char *>(bia_data_);
 
-#pragma omp parallel
+  #pragma omp parallel
   {
     int ithr = omp_get_thread_num(), nthr = omp_get_num_threads();
     int oc_chunks = jcp.nb_oc / jcp.nb_oc_blocking;
@@ -154,7 +154,7 @@ void op_conv<dst_data_t>::infer_conv0conv1() {
     int work_amount = jcp.bs * jcp.gp * jcp.oh;
     balance211(work_amount, nthr, ithr, start, end);
 
-    jit::jit_conv_call_s p = {0};
+    jit::jit_conv_call_t p = {0};
     auto ws_l = ws_ + ithr * ws_per_thread_;
     auto ws1x1_l = ws1x1_ + ithr * ws1x1_per_thread_;
 
@@ -275,7 +275,7 @@ bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
                                     bool conv1_relu,
                                     round_mode conv0_round_mode,
                                     round_mode conv1_round_mode) {
-  using namespace util;
+  using namespace utils;
   // check data type
   if (dst->data_type() != type2dtype<dst_data_t>::dtype) {
     info("Dst data type do not match");
@@ -295,14 +295,17 @@ bool op_conv<dst_data_t>::init_conf(jit::jit_conv_conf_t &conf,
       return false;
     }
   }
+
   if (src_dims[0] != dst_dims[0]) {
     info("Batch size do not equal");
     return false;
   }
+
   if (src_dims[C] != wei_dims[C]) {
     info("Input channel do not match");
     return false;
   }
+
   if (wei1x1 == nullptr) {
     check_eq(fuse_conv1x1_, false);
     if (dst_dims[C] != wei_dims[0]) {
@@ -364,4 +367,5 @@ template class op_conv<f32>;
 template class op_conv<s32>;
 template class op_conv<s8>;
 template class op_conv<u8>;
+
 }

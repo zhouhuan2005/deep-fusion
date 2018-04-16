@@ -27,10 +27,11 @@ file(GLOB_RECURSE SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp
     )
-set(util_deepfusion_cc
-  ${PROJECT_SOURCE_DIR}/util/util_deepfusion.cc
-  ${PROJECT_SOURCE_DIR}/util/util.cc)
-add_library(${TARGET_NAME} SHARED ${HEADERS} ${SOURCES} ${util_deepfusion_cc})
+file(GLOB_RECURSE UTILS
+    ${PROJECT_SOURCE_DIR}/util/*.cc
+    )
+
+add_library(${TARGET_NAME} SHARED ${HEADERS} ${SOURCES} ${UTILS})
 add_dependencies(${TARGET_NAME} ${external_project_dependencies})
 
 target_link_libraries(${TARGET_NAME} "-L${MKLML_LIB_DIR} -liomp5 -Wl,--as-needed")

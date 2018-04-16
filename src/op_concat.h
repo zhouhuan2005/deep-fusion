@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-
 #pragma once
 
 #include "deepfusion.h"
@@ -41,9 +40,9 @@ public:
     const int num_srcs = jcp.n_inputs;
     assert(num_srcs == srcs.size());
 
-    srcs_data_ = (const dtype **)aligned_malloc(num_srcs * sizeof(dtype *), 64);
-    ic_ = (int *)aligned_malloc(num_srcs * sizeof(int), 64);
-    nb_ic_ = (int *)aligned_malloc(num_srcs * sizeof(int), 64);
+    srcs_data_ = (const dtype **)utils::aligned_malloc(num_srcs * sizeof(dtype *), 64);
+    ic_ = (int *)utils::aligned_malloc(num_srcs * sizeof(int), 64);
+    nb_ic_ = (int *)utils::aligned_malloc(num_srcs * sizeof(int), 64);
 
     for (int i = 0; i < num_srcs; ++i) {
       auto dim = srcs[i]->actual_dims();
@@ -51,22 +50,21 @@ public:
       ic_[i] = dim[3];
       nb_ic_[i] = ic_[i] / jcp.block;
       check_eq(nb_ic_[i] * jcp.block, ic_[i]);
-      // the src data is load here, if need update whe infer should change API
+      // XXX the src data pointer is determined here, if need update when infer should change API
       srcs_data_[i] = reinterpret_cast<const dtype *>(srcs[i]->data());
     }
     dst_data_ = (dtype *)dst->data();
 
     const int nthreads = omp_get_max_threads();
     debug("Concat: Max OMP threads: %d", nthreads);
-    src_with_offset_ = (const dtype **)aligned_malloc(
-        nthreads * num_srcs * sizeof(dtype *), 4096);
+    src_with_offset_ = (const dtype **)utils::aligned_malloc(nthreads * num_srcs * sizeof(dtype *), 4096);
   }
 
   ~op_concat() {
-    free(ic_);
-    free(nb_ic_);
-    free(srcs_data_);
-    free(src_with_offset_);
+    utils::aligned_free(ic_);
+    utils::aligned_free(nb_ic_);
+    utils::aligned_free(srcs_data_);
+    utils::aligned_free(src_with_offset_);
     delete kernel_;
   }
 
@@ -75,11 +73,14 @@ protected:
                  const std::vector<std::unique_ptr<memory>> &srcs,
                  const std::unique_ptr<memory> &dst,
                  bool post_relu = false) {
-    // TODO: can add more init of op_concat itself
-    // before run into kernel init_conf
+    /* TODO can add more init of op_concat itself
+            before run into kernel init_conf
+    */
     return jit::jit_concat_kernel::init_conf(conf, srcs, dst, post_relu);
   }
+
   void infer() override;
+
   const char *name() { return "concat"; }
 
 private:

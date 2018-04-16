@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #===============================================================================
-
 cmake_minimum_required(VERSION 3.5)
 
 if(WIN32 OR APPLE)
@@ -46,11 +45,6 @@ message(STATUS "CXX compiler: ${CMAKE_CXX_COMPILER}, version: "
 message(STATUS "C compiler: ${CMAKE_C_COMPILER}, version: "
         "${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
 
-if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "5.4")
-  message(WARNING "The CXX compiler version: ${CMAKE_C_COMPILER_ID}"
-        "${CMAKE_C_COMPILER_VERSION} is lower than 5.4, may have some unkown issues")
-endif()
-
 if (${CMAKE_BUILD_TYPE} MATCHES "Release")
   set(DEBUG_MODE OFF)
 else()
@@ -58,7 +52,7 @@ else()
 endif()
 
 ################################ Configurations #######################################
-option(WITH_VNNI          "Compile with AVX512 VNNI support"          ${VNNI_FOUND})  # TODO: enable it when conv
+option(WITH_VNNI          "Compile with AVX512 VNNI support"          ${VNNI_FOUND})
 option(WITH_VERBOSE       "Compile with VERBOSE for profiling"        ${DEBUG_MODE})
 option(WITH_DUMP_CODE     "Compile with enabling dump code from JIT"  ${DEBUG_MODE})
 option(WITH_BENCHMARK     "Compile with benchmark"                               ON)
@@ -119,9 +113,8 @@ include_directories("${PROJECT_SOURCE_DIR}")
 include_directories(include)
 include_directories(util)
 
-# TODO: util::_getenv has warnning
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overflow")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow")
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overflow")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow")
 
 add_subdirectory(src)
 add_subdirectory(test)
