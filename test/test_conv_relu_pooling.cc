@@ -13,6 +13,10 @@ struct test_conv_relu_pool_params {
    memory::pair_dims pool_pad;
    memory::pair_dims pool_stride;
    memory::nchw_dims dst_dims;
+
+   bool pooling_avg_include_padding;
+   bool pooling_avg_exclude_padding;  
+   bool max_pooling;
 };
 
 
@@ -67,6 +71,7 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
                                     (data_t_dst*)(bias->data()), 
                                     bias->size());
 
+      //TODO: revise conv_dst
       // dst memory preparation
       auto mkldnn_dst_dims = testutils::to_mkldnn_dims(pm.dst_dims);
       auto dst_desc = mkldnn::memory::desc(mkldnn_dst_dims, mkldnn_dt_dst, mkldnn_fmt_dst);
@@ -85,8 +90,8 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
                   {pm.conv_pad[0], pm.conv_pad[1]},
                   mkldnn::padding_kind::zero));
 
-      
-      // conv_primitive_desc
+      /*
+      // add scale
       mkldnn::primitive_attr attr;
       int mask = 0;
       int count = pm.dst_dims[3];
@@ -94,24 +99,81 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
       attr.set_output_scales(mask, scales);
       attr.set_int_output_round_mode(mkldnn::round_mode::round_nearest);
 
+      // add relu
       mkldnn::post_ops ops;
-      float scale = 1.0f;
-      float negative_slope = 0.0f;
+      float scale = 1.f;
+      float negative_slope = 0.f;
       float alpha = negative_slope; //negative slope for mkldnn_eltwise_relu.
-      float beta = 1.0f; //ignored for mkldnn_eltwise_relu.
+      float beta = 0.f; //ignored for mkldnn_eltwise_relu.
       ops.append_eltwise(scale, mkldnn::algorithm::eltwise_relu, alpha, beta);
       attr.set_post_ops(ops);
 
+      // conv_primitive_desc
       std::unique_ptr<mkldnn::convolution_forward::primitive_desc> convFwd_pd;
       convFwd_pd.reset(new mkldnn::convolution_forward::primitive_desc(*convFwd_desc, attr, eng));
+      */
+
+      // conv_primitive_desc
+      std::unique_ptr<mkldnn::convolution_forward::primitive_desc> convFwd_pd;
+      convFwd_pd.reset(new mkldnn::convolution_forward::primitive_desc(*convFwd_desc, eng));
+
 
       // conv_prmitive
       std::unique_ptr<mkldnn::convolution_forward> convFwd;
       convFwd.reset(new mkldnn::convolution_forward(*convFwd_pd, 
                   src_memory, wei_memory, bias_memory, dst_memory));
 
+      std::vector<mkldnn::primitive> conv_relu_pool;
+      conv_relu_pool.push_back(*convFwd);
 
+      // relu
+      std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> reluFwd_pd;
+      reluFwd_pd = testutils::get_mkldnn_relu_pd(dst_desc, eng);
+      std::unique_ptr<mkldnn::eltwise_forward> reluFwd;
+      reluFwd.reset(new mkldnn::eltwise_forward(*reluFwd_pd, dst_memory, dst_memory));
+      conv_relu_pool.push_back(*reluFwd);
 
+      
+      // pooling_dst memory preparation
+      auto pool_mkldnn_dst_dims = testutils::to_mkldnn_dims(pm.dst_dims);
+      auto pool_dst_desc = mkldnn::memory::desc(pool_mkldnn_dst_dims, mkldnn_dt_dst, mkldnn_fmt_dst);
+      auto pool_dst_pd = mkldnn::memory::primitive_desc(pool_dst_desc, eng);
+      auto pool_dst_memory = mkldnn::memory(pool_dst_pd);
+
+      // pooling_desc
+      mkldnn::algorithm pooling_algorithm = mkldnn::algorithm::pooling_max;
+      if (pm.pooling_avg_include_padding)
+          pooling_algorithm = mkldnn::algorithm::pooling_avg_include_padding;
+      else if (pm.pooling_avg_exclude_padding)
+          pooling_algorithm = mkldnn::algorithm::pooling_avg_exclude_padding;
+
+      std::unique_ptr<mkldnn::pooling_forward::desc> poolFwd_desc;
+      poolFwd_desc.reset(new mkldnn::pooling_forward::desc(
+                  mkldnn::prop_kind::forward_inference,
+                  pooling_algorithm,
+                  dst_desc,
+                  pool_dst_desc,
+                  {pm.pool_stride[0], pm.pool_stride[1]},
+                  {pm.pool_kernel[0], pm.pool_kernel[1]},
+                  {pm.pool_pad[0], pm.pool_pad[1]},
+                  {pm.pool_pad[0], pm.pool_pad[1]},
+                  mkldnn::padding_kind::zero));
+
+      std::unique_ptr<mkldnn::pooling_forward::primitive_desc> poolFwd_pd;
+      poolFwd_pd.reset(new mkldnn::pooling_forward::primitive_desc(
+                  *poolFwd_desc, eng));
+
+      std::unique_ptr<mkldnn::pooling_forward> poolFwd;
+      poolFwd.reset(new mkldnn::pooling_forward(*poolFwd_pd, dst_memory, pool_dst_memory));
+      conv_relu_pool.push_back(*poolFwd);
+
+/*      mkldnn::stream(mkldnn::stream::kind::eager).submit(conv_relu_pool).wait();
+      
+      // compare result
+      data_t_dst* ref_data = (data_t_dst*)(pool_dst_memory.get_data_handle());
+      data_t_dst* jit_data = (data_t_dst*)(dst->data());
+      testutils::compare_array<data_t_dst>(jit_data, ref_data, dst->size());
+      */
   }
 
 protected:
@@ -159,6 +221,6 @@ TEST_P(pooling_test_s32, TestsPooling) {}
 INSTANTIATE_TEST_CASE_P(
         TestConvReluPooling, pooling_test_s32, ::testing::Values(
           test_conv_relu_pool_params{
-          {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}}
+          {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true}
         )
 );
