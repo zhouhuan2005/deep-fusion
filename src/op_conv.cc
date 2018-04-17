@@ -50,6 +50,7 @@ void op_conv<dst_data_t>::infer_conv0() {
     auto ws_l = ws_ + ithr * ws_per_thread_;
     size_t src_h_stride = jcp.iw * jcp.ic;
     size_t dst_h_stride = jcp.ow * jcp.oc;
+    // TODO: below stride should be wrong!
     size_t wht_h_stride = jcp.kw;
     size_t wht_ic_stride = jcp.kh * jcp.kw;
 

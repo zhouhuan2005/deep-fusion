@@ -99,7 +99,7 @@ void jit_conv_kernel::store_1x1output(int ur_w, int ocb1x1) {
     }
     vmulps(zmm, zmm, EVEX_compress_addr(reg_ptr_scales1x1, scale_offset));
     // relu
-    if (jcp.conv1_with_relu) {
+    if (jcp.conv1_with_relu || jcp.dst_dt == data_type::u8) {
       vmaxps(zmm, zmm_zero, zmm);
     }
     if (jcp.dst_dt != data_type::f32) {
@@ -261,7 +261,7 @@ void jit_conv_kernel::store_output(int ur_w) {
         vaddps(zmm, zmm, zmm_bias);
       }
       vmulps(zmm, zmm, EVEX_compress_addr(reg_ptr_scales, scale_offset));
-      if (jcp.conv0_with_relu) {
+      if (jcp.conv0_with_relu || jcp.dst_dt == data_type::u8 || jcp.fuse_conv1x1) {
         vmaxps(zmm, zmm_zero, zmm);
       }
       if (jcp.dst_dt != data_type::f32) {
@@ -569,6 +569,8 @@ bool jit_conv_kernel::init_conf(jit_conv_conf_t &jcp,
   auto wei_dims = wei->std_dims();  // oihw
   auto dst_dims = dst->std_dims();  // nchw
   jcp.bs = src_dims[0];
+  // TODO: ic, oc do not use src and dst channel, use wei instead
+  // src and dst channel should be used for double check
   jcp.ic = src_dims[1] / jcp.gp;
   jcp.ih = src_dims[2];
   jcp.iw = src_dims[3];
