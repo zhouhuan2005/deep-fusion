@@ -48,17 +48,15 @@ else()
   -Wno-unused-but-set-variable -Wno-unused-variable -Wno-format-truncation")
 endif()
 
-# TODO: MKL-DNN have build error on gcc8.0 "within lambda, error: lvalue required as unary ‘&’ operand"
-# so here force to use lowwer gcc(5.4) to build MKL-DNN
-# but VNNI is only supported after gcc8.0, so need follow-up when VNNI is needed!
-set(MKLDNN_C_COMPILER "/usr/bin/gcc")
-set(MKLDNN_CXX_COMPILER "/usr/bin/g++")
+set(MKLDNN_C_COMPILER ${CMAKE_C_COMPILER})
+set(MKLDNN_CXX_COMPILER ${CMAKE_CXX_COMPILER})
+
 ExternalProject_Add(
     ${MKLDNN_PROJECT}
     ${EXTERNAL_PROJECT_LOG_ARGS}
     DEPENDS             ${MKLDNN_DEPENDS}
     GIT_REPOSITORY      "https://github.com/01org/mkl-dnn.git"
-    GIT_TAG             "8758fe6ec8a1695b6ac1570b749818a188d0ad66" #based on Mar 32th, or try "v0.13"
+    GIT_TAG             "8758fe6ec8a1695b6ac1570b749818a188d0ad66"
     PREFIX              ${MKLDNN_SOURCES_DIR}
     UPDATE_COMMAND      ""
     CMAKE_ARGS          -DCMAKE_INSTALL_PREFIX=${MKLDNN_INSTALL_DIR}
