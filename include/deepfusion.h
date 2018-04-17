@@ -60,6 +60,7 @@ public:
     gOIhw4i16o4i,
   };
   typedef std::vector<int> dims;
+  typedef std::array<int, 2> pair_dims;
   typedef std::array<int, 4> nchw_dims;
 
   enum dtype {
