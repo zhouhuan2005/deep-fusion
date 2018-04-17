@@ -71,6 +71,7 @@ class test_conv : public ::testing::TestWithParam<test_conv_params> {
 protected:
   virtual void SetUp() {
     test_conv_params p = ::testing::TestWithParam<test_conv_params>::GetParam();
+    // TODO: do not compare multi channel scales, MKLDNN should have bugs
   }
 };
 

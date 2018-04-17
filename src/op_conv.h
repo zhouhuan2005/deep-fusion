@@ -37,6 +37,7 @@ public:
                    std::array<int, 2> sz_stride,
                    std::array<int, 2> sz_padding,
                    std::unique_ptr<memory> &dst,
+                   // TODO: change to const &
                    std::vector<float> conv0_scales = {1.f},
                    std::vector<float> conv1_scales = {1.f},
                    const std::unique_ptr<memory> &wei1x1 = nullptr,
@@ -89,6 +90,7 @@ public:
     bia1x1_data_ = bia1x1 != nullptr
                        ? reinterpret_cast<const void *>(bia1x1->data())
                        : NULL;
+    // TODO: do not save pointor, save buffer instead
     conv0_scales_data_ = reinterpret_cast<const float *>(conv0_scales.data());
     conv1_scales_data_ = reinterpret_cast<const float *>(conv1_scales.data());
   }
