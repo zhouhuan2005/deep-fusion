@@ -1,4 +1,5 @@
 #include "test_utils.h"
+#include "log.h"
 
 using namespace deepfusion;
 using format = deepfusion::memory::format;
@@ -8,6 +9,8 @@ struct test_conv_relu_pool_params {
    memory::pair_dims conv_kernel;
    memory::pair_dims conv_pad;
    memory::pair_dims conv_stride;
+
+   bool with_relu;
 
    memory::pair_dims pool_kernel;
    memory::pair_dims pool_pad;
@@ -40,7 +43,8 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
       auto mkldnn_fmt_wei = mkldnn::memory::format::OIhw4i16o4i;
       auto mkldnn_fmt_dst = mkldnn::memory::format::nhwc;
       auto mkldnn_fmt_bia = mkldnn::memory::format::x;
-
+      
+      /****************************** conv ***************************/
       // src memory preparation
       //mkldnn::memory mkldnn_src;
       //mkldnn::memory::primitive_desc src_pd;
@@ -53,8 +57,9 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
                                     src->size());
 
       // weight memory preparation
-      auto mkldnn_wei_dims = testutils::to_mkldnn_dims({pm.dst_dims[3], pm.src_dims[3], 
-              pm.conv_kernel[0], pm.conv_kernel[1]});
+      memory::nchw_dims wei_dims = {pm.dst_dims[1], pm.src_dims[1],
+          pm.conv_kernel[0], pm.conv_kernel[1]};
+      auto mkldnn_wei_dims = testutils::to_mkldnn_dims(wei_dims);
       auto wei_desc = mkldnn::memory::desc(mkldnn_wei_dims, mkldnn_dt_wei, mkldnn_fmt_wei);
       auto wei_pd = mkldnn::memory::primitive_desc(wei_desc, eng);
       auto wei_memory = mkldnn::memory(wei_pd);
@@ -62,29 +67,38 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
                                     (data_t_wei*)(wei->data()), 
                                     wei->size());
 
+      
       // bias memory preparation
-      auto mkldnn_bias_dims = testutils::to_mkldnn_dims({pm.dst_dims[-1]});
-      auto bias_desc = mkldnn::memory::desc(mkldnn_bias_dims, mkldnn_dt_dst, mkldnn_fmt_dst);
+      memory::dims bias_dims = {pm.dst_dims[1]};
+      auto mkldnn_bias_dims = testutils::to_mkldnn_dims(bias_dims);
+      auto bias_desc = mkldnn::memory::desc(mkldnn_bias_dims, mkldnn_dt_dst, mkldnn_fmt_bia);
       auto bias_pd = mkldnn::memory::primitive_desc(bias_desc, eng);
       auto bias_memory = mkldnn::memory(bias_pd);
       utils::copy_array<data_t_dst>((data_t_dst*)(bias_memory.get_data_handle()), 
                                     (data_t_dst*)(bias->data()), 
                                     bias->size());
 
-      //TODO: revise conv_dst
       // dst memory preparation
-      auto mkldnn_dst_dims = testutils::to_mkldnn_dims(pm.dst_dims);
-      auto dst_desc = mkldnn::memory::desc(mkldnn_dst_dims, mkldnn_dt_dst, mkldnn_fmt_dst);
-      auto dst_pd = mkldnn::memory::primitive_desc(dst_desc, eng);
-      auto dst_memory = mkldnn::memory(dst_pd);
-
+      memory::nchw_dims conv_dst_dims;
+      conv_dst_dims[0] = pm.dst_dims[0];
+      conv_dst_dims[1] = pm.dst_dims[1];
+      int tail_h = (pm.src_dims[2] + 2 * pm.conv_pad[0] - pm.conv_kernel[0] ) % pm.conv_stride[0];
+      int tail_w = (pm.src_dims[3] + 2 * pm.conv_pad[1] - pm.conv_kernel[1] ) % pm.conv_stride[1];
+      if (tail_h != 0 || tail_w != 0)
+          error_and_exit("bad input size and padding size");
+      conv_dst_dims[2] = (pm.src_dims[2] + 2 * pm.conv_pad[0] - pm.conv_kernel[0] ) / pm.conv_stride[0] + 1;
+      conv_dst_dims[3] = (pm.src_dims[3] + 2 * pm.conv_pad[1] - pm.conv_kernel[1] ) / pm.conv_stride[1] + 1;
+      auto mkldnn_dst_dims = testutils::to_mkldnn_dims(conv_dst_dims);
+      auto conv_dst_desc = mkldnn::memory::desc(mkldnn_dst_dims, mkldnn_dt_dst, mkldnn_fmt_dst);
+      auto conv_dst_pd = mkldnn::memory::primitive_desc(conv_dst_desc, eng);
+      auto conv_dst_memory = mkldnn::memory(conv_dst_pd);
 
       // conv_desc
       std::unique_ptr<mkldnn::convolution_forward::desc> convFwd_desc;
       convFwd_desc.reset(new mkldnn::convolution_forward::desc(
                   mkldnn::prop_kind::forward_scoring,
                   mkldnn::algorithm::convolution_direct, 
-                  src_desc, wei_desc, bias_desc, dst_desc, 
+                  src_desc, wei_desc, bias_desc, conv_dst_desc, 
                   {pm.conv_stride[0], pm.conv_stride[1]},
                   {pm.conv_pad[0], pm.conv_pad[1]},
                   {pm.conv_pad[0], pm.conv_pad[1]},
@@ -113,7 +127,7 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
       convFwd_pd.reset(new mkldnn::convolution_forward::primitive_desc(*convFwd_desc, attr, eng));
       */
 
-      // conv_primitive_desc
+     // conv_primitive_desc
       std::unique_ptr<mkldnn::convolution_forward::primitive_desc> convFwd_pd;
       convFwd_pd.reset(new mkldnn::convolution_forward::primitive_desc(*convFwd_desc, eng));
 
@@ -121,19 +135,39 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
       // conv_prmitive
       std::unique_ptr<mkldnn::convolution_forward> convFwd;
       convFwd.reset(new mkldnn::convolution_forward(*convFwd_pd, 
-                  src_memory, wei_memory, bias_memory, dst_memory));
+                  src_memory, wei_memory, bias_memory, conv_dst_memory));
 
       std::vector<mkldnn::primitive> conv_relu_pool;
       conv_relu_pool.push_back(*convFwd);
 
+
+
+      /******************************* relu *****************************/
       // relu
       std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> reluFwd_pd;
-      reluFwd_pd = testutils::get_mkldnn_relu_pd(dst_desc, eng);
+      reluFwd_pd = testutils::get_mkldnn_relu_pd(conv_dst_desc, eng);
       std::unique_ptr<mkldnn::eltwise_forward> reluFwd;
-      reluFwd.reset(new mkldnn::eltwise_forward(*reluFwd_pd, dst_memory, dst_memory));
+      reluFwd.reset(new mkldnn::eltwise_forward(*reluFwd_pd, conv_dst_memory, conv_dst_memory));
       conv_relu_pool.push_back(*reluFwd);
 
-      
+
+
+      /****************************** pooling ***************************/
+      // check pooling dst
+      memory::nchw_dims ref_dst_dims = conv_dst_dims;
+      int pool_tail_h = (conv_dst_dims[2] + 2 * pm.pool_pad[0]) % pm.pool_stride[0];
+      int pool_tail_w = (conv_dst_dims[3] + 2 * pm.pool_pad[1]) % pm.pool_stride[1];
+      if (pool_tail_h != 0 || pool_tail_w != 0)
+          error_and_exit("bad input size and pooling_padding size");
+      ref_dst_dims[2] = (conv_dst_dims[2] + 2 * pm.pool_pad[0]) / pm.pool_stride[0];
+      ref_dst_dims[3] = (conv_dst_dims[3] + 2 * pm.pool_pad[1]) / pm.pool_stride[1];
+      std::cout<<"ref_dst_dims = " << ref_dst_dims[0] << "," << ref_dst_dims[1] << "," <<
+          ref_dst_dims[2] << "," << ref_dst_dims[3] << std::endl;
+      std::cout<<"dst_dims = " << pm.dst_dims[0] << "," << pm.dst_dims[1] << "," <<
+          pm.dst_dims[2] << "," << pm.dst_dims[3] << std::endl;
+      if (ref_dst_dims != pm.dst_dims) 
+          error_and_exit("bad input size and pooling_padding size");
+
       // pooling_dst memory preparation
       auto pool_mkldnn_dst_dims = testutils::to_mkldnn_dims(pm.dst_dims);
       auto pool_dst_desc = mkldnn::memory::desc(pool_mkldnn_dst_dims, mkldnn_dt_dst, mkldnn_fmt_dst);
@@ -151,7 +185,7 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
       poolFwd_desc.reset(new mkldnn::pooling_forward::desc(
                   mkldnn::prop_kind::forward_inference,
                   pooling_algorithm,
-                  dst_desc,
+                  conv_dst_desc,
                   pool_dst_desc,
                   {pm.pool_stride[0], pm.pool_stride[1]},
                   {pm.pool_kernel[0], pm.pool_kernel[1]},
@@ -159,21 +193,26 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
                   {pm.pool_pad[0], pm.pool_pad[1]},
                   mkldnn::padding_kind::zero));
 
+      // pooling_primitive_desc
       std::unique_ptr<mkldnn::pooling_forward::primitive_desc> poolFwd_pd;
       poolFwd_pd.reset(new mkldnn::pooling_forward::primitive_desc(
                   *poolFwd_desc, eng));
 
+      // pooling_primitive
       std::unique_ptr<mkldnn::pooling_forward> poolFwd;
-      poolFwd.reset(new mkldnn::pooling_forward(*poolFwd_pd, dst_memory, pool_dst_memory));
+      poolFwd.reset(new mkldnn::pooling_forward(*poolFwd_pd, conv_dst_memory, pool_dst_memory));
       conv_relu_pool.push_back(*poolFwd);
 
-/*      mkldnn::stream(mkldnn::stream::kind::eager).submit(conv_relu_pool).wait();
+      // submit
+      mkldnn::stream(mkldnn::stream::kind::eager).submit(conv_relu_pool).wait();
       
-      // compare result
+      
+      /****************************** compare result ***************************/      
+     /* // compare result
       data_t_dst* ref_data = (data_t_dst*)(pool_dst_memory.get_data_handle());
       data_t_dst* jit_data = (data_t_dst*)(dst->data());
       testutils::compare_array<data_t_dst>(jit_data, ref_data, dst->size());
-      */
+  */
   }
 
 protected:
@@ -189,38 +228,49 @@ protected:
         std::unique_ptr<memory> src;
         src.reset(new memory(p.src_dims, format::nhwc, dtype_src));
         testutils::fill_data<data_t_src>(static_cast<data_t_src*>(src->data()), src->size());
-      
+     
         std::unique_ptr<memory> weight;
-        weight.reset(new memory({p.dst_dims[3], p.src_dims[3], p.conv_kernel[0], p.conv_kernel[1]}, format::OIhw4i16o4i, dtype_wei));
+        memory::nchw_dims weight_dims = {p.dst_dims[1], p.src_dims[1], p.conv_kernel[0], p.conv_kernel[1]};
+        weight.reset(new memory(weight_dims, format::OIhw4i16o4i, dtype_wei));
         testutils::fill_data<data_t_wei>(static_cast<data_t_wei*>(weight->data()), weight->size());
+
+        std::unique_ptr<memory> bias;
+        memory::dims bias_dims = {p.dst_dims[1]};
+        bias.reset(new memory(bias_dims, format::x, dtype_dst));
+        testutils::fill_data<data_t_dst>(static_cast<data_t_dst*>(bias->data()), bias->size());
 
         std::unique_ptr<memory> dst;
         dst.reset(new memory(p.dst_dims, format::nhwc, dtype_dst));
 
         // TODO:add conv_relu_fuse
+       /* jit_avx512_core_u8s8s32x_convolution_relu_pool_op
+          (const std::unique_ptr<memory> &conv_src,
+           const std::unique_ptr<memory> &conv_wei,
+           const std::unique_ptr<memory> &conv_bia,
+           std::array<int, 2> conv_stride,
+           std::array<int, 2> conv_padding,
+           std::array<int, 2> conv_kernel,
+           const std::unique_ptr<memory> &conv_dst,
+           std::vector<float> conv_scales = {1.f},
+           bool conv_relu = true,
+           round_mode conv_round_mode = round_mode::nearest,
+           const std::unique_ptr<memory>  &pool_src,
+           const std::unique_ptr<memory>  &pool_dst,
+           std::array<int, 2> pool_stride,
+           std::array<int, 2> pool_padding,
+           std::array<int, 2> pool_kernel,
+           round_mode pool_round_mode = round_mode::nearest)*/
+        check_result(p, src, weight, bias, dst);
 
-        //check_result(p, src, weight, dst);
-
+       
     }
 };
-/*
-struct test_conv_relu_pool_prams {
-   memory::nchw_dims src_dims;
-   memory::dims conv_kh, conv_kw;
-   memory::dims conv_padR, conv_padL;
-   memory::dims conv_strh, conv_strw;
-
-   memory::dims pool_kh, pool_kw;
-   memory::dims pool_padR, pool_padL;
-   memory::dims pool_strh, pool_strw;
-   memory::nchw_dims dst_dims;
-}*/
 
 using pooling_test_s32 = conv_relu_pooling_test<u8, s8, s32, s32>;
 TEST_P(pooling_test_s32, TestsPooling) {}
 INSTANTIATE_TEST_CASE_P(
         TestConvReluPooling, pooling_test_s32, ::testing::Values(
           test_conv_relu_pool_params{
-          {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true}
+          {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, true, {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true}
         )
 );

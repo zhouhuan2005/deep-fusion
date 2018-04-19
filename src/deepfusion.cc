@@ -18,6 +18,7 @@
 #include "deepfusion_utils.h"
 #include "op_concat.h"
 #include "op_conv.h"
+#include <iostream>
 
 namespace deepfusion {
 
@@ -61,6 +62,14 @@ memory::memory(const nchw_dims &dm,
                int alignment)
     : std_dims_(dm), fmt_(fmt), dt_(dt) {
   dims_ = nchw2format(dm, fmt);
+  allocate_buffer(alignment);
+}
+
+memory::memory(const dims &dm,
+               const format fmt,
+               const dtype dt,
+               int alignment)
+    : dims_(dm), fmt_(fmt), dt_(dt) {
   allocate_buffer(alignment);
 }
 

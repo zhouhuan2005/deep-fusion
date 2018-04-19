@@ -78,6 +78,10 @@ public:
                   const format fmt,
                   const dtype dt,
                   int alignment = 4096);
+  explicit memory(const dims &dm,
+                  const format fmt,
+                  const dtype dt,
+                  int alignment = 4096);
   ~memory();
   size_t size();
   size_t buffer_size();
