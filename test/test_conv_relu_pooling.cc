@@ -10,6 +10,7 @@ struct test_conv_relu_pool_params {
    memory::pair_dims conv_pad;
    memory::pair_dims conv_stride;
 
+   bool with_eltwise_sum;
    bool with_relu;
 
    memory::pair_dims pool_kernel;
@@ -104,7 +105,16 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
                   {pm.conv_pad[0], pm.conv_pad[1]},
                   mkldnn::padding_kind::zero));
 
-      /*
+      //add shortcut sum for resnet
+      mkldnn::primitive_attr attr;
+      mkldnn::post_ops ops_;
+      float scale = 0.f;
+      if (pm.with_eltwise_sum)
+          scale = 1.f;
+      ops_.append_sum(scale);
+      attr.set_post_ops(ops_);
+
+      /*     
       // add scale
       mkldnn::primitive_attr attr;
       int mask = 0;
@@ -121,15 +131,12 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
       float beta = 0.f; //ignored for mkldnn_eltwise_relu.
       ops.append_eltwise(scale, mkldnn::algorithm::eltwise_relu, alpha, beta);
       attr.set_post_ops(ops);
-
-      // conv_primitive_desc
-      std::unique_ptr<mkldnn::convolution_forward::primitive_desc> convFwd_pd;
-      convFwd_pd.reset(new mkldnn::convolution_forward::primitive_desc(*convFwd_desc, attr, eng));
       */
 
      // conv_primitive_desc
       std::unique_ptr<mkldnn::convolution_forward::primitive_desc> convFwd_pd;
-      convFwd_pd.reset(new mkldnn::convolution_forward::primitive_desc(*convFwd_desc, eng));
+      convFwd_pd.reset(new mkldnn::convolution_forward::primitive_desc(*convFwd_desc, attr, eng));
+      //convFwd_pd.reset(new mkldnn::convolution_forward::primitive_desc(*convFwd_desc, eng));
 
 
       // conv_prmitive
@@ -161,10 +168,6 @@ class conv_relu_pooling_test : public ::testing::TestWithParam<test_conv_relu_po
           error_and_exit("bad input size and pooling_padding size");
       ref_dst_dims[2] = (conv_dst_dims[2] + 2 * pm.pool_pad[0]) / pm.pool_stride[0];
       ref_dst_dims[3] = (conv_dst_dims[3] + 2 * pm.pool_pad[1]) / pm.pool_stride[1];
-      std::cout<<"ref_dst_dims = " << ref_dst_dims[0] << "," << ref_dst_dims[1] << "," <<
-          ref_dst_dims[2] << "," << ref_dst_dims[3] << std::endl;
-      std::cout<<"dst_dims = " << pm.dst_dims[0] << "," << pm.dst_dims[1] << "," <<
-          pm.dst_dims[2] << "," << pm.dst_dims[3] << std::endl;
       if (ref_dst_dims != pm.dst_dims) 
           error_and_exit("bad input size and pooling_padding size");
 
@@ -223,7 +226,6 @@ protected:
         auto dtype_wei = utils::type2dtype<data_t_wei>::dtype;
         auto dtype_acc = utils::type2dtype<data_t_acc>::dtype;
         auto dtype_dst = utils::type2dtype<data_t_dst>::dtype;
-        std::cout<< "=========pooling test========"<<std::endl;
         
         std::unique_ptr<memory> src;
         src.reset(new memory(p.src_dims, format::nhwc, dtype_src));
@@ -266,11 +268,96 @@ protected:
     }
 };
 
+using pooling_test_u8 = conv_relu_pooling_test<u8, s8, s32, u8>;
+using pooling_test_s8 = conv_relu_pooling_test<u8, s8, s32, s8>;
 using pooling_test_s32 = conv_relu_pooling_test<u8, s8, s32, s32>;
+
 TEST_P(pooling_test_s32, TestsPooling) {}
+
 INSTANTIATE_TEST_CASE_P(
-        TestConvReluPooling, pooling_test_s32, ::testing::Values(
-          test_conv_relu_pool_params{
-          {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, true, {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true}
-        )
-);
+        TestConvReluPooling_VGG_s32, pooling_test_s32, ::testing::Values(
+          test_conv_relu_pool_params{ {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true},
+          test_conv_relu_pool_params{ {1, 64, 224, 224}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 128, 112, 112}, false, false, true },
+          test_conv_relu_pool_params{ {1, 128, 112, 112}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 256, 56, 56}, false, false, true },
+          test_conv_relu_pool_params{ {1, 256, 56, 56}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 28, 28}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 28, 28}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 14, 14}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 14, 14}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 7, 7}, false, false, true }
+        ));
+
+//TODO: revise params in Resnet 
+INSTANTIATE_TEST_CASE_P(
+        TestConvReluPooling_Resnet, pooling_test_s32, ::testing::Values(
+          test_conv_relu_pool_params{ {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, true, true
+          {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true},
+          test_conv_relu_pool_params{ {1, 64, 224, 224}, {3, 3}, {1, 1}, {1, 1}, true, true
+          {2, 2}, {0, 0}, {2, 2}, {1, 128, 112, 112}, false, false, true },
+          test_conv_relu_pool_params{ {1, 128, 112, 112}, {3, 3}, {1, 1}, {1, 1}, true, true
+          {2, 2}, {0, 0}, {2, 2}, {1, 256, 56, 56}, false, false, true },
+          test_conv_relu_pool_params{ {1, 256, 56, 56}, {3, 3}, {1, 1}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 28, 28}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 28, 28}, {3, 3}, {1, 1}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 14, 14}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 14, 14}, {3, 3}, {1, 1}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 7, 7}, false, false, true }
+        ));
+/*
+//TODO: revise params in Mobilenet 
+INSTANTIATE_TEST_CASE_P(
+        TestConvReluPooling_Mobilenet, pooling_test_s32, ::testing::Values(
+          test_conv_relu_pool_params{ {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true},
+          test_conv_relu_pool_params{ {1, 64, 224, 224}, {3, 3}, {1, 1}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 128, 112, 112}, false, false, true },
+          test_conv_relu_pool_params{ {1, 128, 112, 112}, {3, 3}, {1, 1}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 256, 56, 56}, false, false, true },
+          test_conv_relu_pool_params{ {1, 256, 56, 56}, {3, 3}, {1, 1}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 28, 28}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 28, 28}, {3, 3}, {1, 1}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 14, 14}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 14, 14}, {3, 3}, {1, 1}, {1, 1}, true, true,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 7, 7}, false, false, true }
+        ));
+*/
+
+TEST_P(pooling_test_u8, TestsPooling) {}
+
+INSTANTIATE_TEST_CASE_P(
+        TestConvReluPooling_VGG_u8, pooling_test_u8, ::testing::Values(
+          test_conv_relu_pool_params{ {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true},
+          test_conv_relu_pool_params{ {1, 64, 224, 224}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 128, 112, 112}, false, false, true },
+          test_conv_relu_pool_params{ {1, 128, 112, 112}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 256, 56, 56}, false, false, true },
+          test_conv_relu_pool_params{ {1, 256, 56, 56}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 28, 28}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 28, 28}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 14, 14}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 14, 14}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 7, 7}, false, false, true }
+        ));
+
+TEST_P(pooling_test_s8, TestsPooling) {}
+
+INSTANTIATE_TEST_CASE_P(
+        TestConvReluPooling_VGG_s8, pooling_test_s8, ::testing::Values(
+          test_conv_relu_pool_params{ {1, 16, 4, 4}, {3, 3}, {0, 0}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 16, 1, 1}, false, false, true},
+          test_conv_relu_pool_params{ {1, 64, 224, 224}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 128, 112, 112}, false, false, true },
+          test_conv_relu_pool_params{ {1, 128, 112, 112}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 256, 56, 56}, false, false, true },
+          test_conv_relu_pool_params{ {1, 256, 56, 56}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 28, 28}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 28, 28}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 14, 14}, false, false, true },
+          test_conv_relu_pool_params{ {1, 512, 14, 14}, {3, 3}, {1, 1}, {1, 1}, true, false,
+          {2, 2}, {0, 0}, {2, 2}, {1, 512, 7, 7}, false, false, true }
+        ));
+
