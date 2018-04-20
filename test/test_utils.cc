@@ -140,5 +140,13 @@ mkldnn::memory::dims to_mkldnn_dims(const memory::nchw_dims& nchwdims) {
   return out;
 }
 
+mkldnn::memory::dims to_mkldnn_dims(const memory::dims& dims_) {
+  mkldnn::memory::dims out(dims_.size());
+  for (size_t i = 0; i < out.size(); ++i) {
+    out[i] = dims_[i];
+  }
+  return out;
+}
+
 }
 }

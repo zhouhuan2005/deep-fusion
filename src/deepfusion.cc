@@ -18,6 +18,7 @@
 #include "deepfusion_utils.h"
 #include "op_concat.h"
 #include "op_conv.h"
+#include <iostream>
 
 namespace deepfusion {
 
@@ -40,6 +41,13 @@ memory::dims nchw2format(const memory::nchw_dims &dm,
       out[2] = dm[2];
       out[3] = dm[3];
       break;
+    case format::OIhw4i16o4i:
+      out.resize(4);
+      out[0] = dm[0];
+      out[1] = dm[1];
+      out[2] = dm[2];
+      out[3] = dm[3];
+      break;
     default:
       error_and_exit("bad type");
   }
@@ -54,6 +62,14 @@ memory::memory(const nchw_dims &dm,
                int alignment)
     : std_dims_(dm), fmt_(fmt), dt_(dt) {
   dims_ = nchw2format(dm, fmt);
+  allocate_buffer(alignment);
+}
+
+memory::memory(const dims &dm,
+               const format fmt,
+               const dtype dt,
+               int alignment)
+    : dims_(dm), fmt_(fmt), dt_(dt) {
   allocate_buffer(alignment);
 }
 

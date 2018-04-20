@@ -90,6 +90,7 @@ std::unique_ptr<mkldnn::eltwise_forward::primitive_desc> get_mkldnn_relu_pd(
 
 // exchange btw mkldnn and deepfusion
 mkldnn::memory::dims to_mkldnn_dims(const memory::nchw_dims& nchwdims);
+mkldnn::memory::dims to_mkldnn_dims(const memory::dims& dims_);
 memory::dtype from_mkldnn_dtype(mkldnn::memory::data_type dt);
 mkldnn::memory::data_type to_mkldnn_dtype(memory::dtype dt);
 

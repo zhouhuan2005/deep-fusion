@@ -60,6 +60,7 @@ public:
     gOIhw4i16o4i,
   };
   typedef std::vector<int> dims;
+  typedef std::array<int, 2> pair_dims;
   typedef std::array<int, 4> nchw_dims;
 
   enum dtype {
@@ -74,6 +75,10 @@ public:
   // explicit memory(const dims& dm, const format fmt, const dtype dt, int
   // alignment = 64);
   explicit memory(const nchw_dims &dm,
+                  const format fmt,
+                  const dtype dt,
+                  int alignment = 4096);
+  explicit memory(const dims &dm,
                   const format fmt,
                   const dtype dt,
                   int alignment = 4096);
