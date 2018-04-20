@@ -280,8 +280,7 @@ protected:
            std::array<int, 2> pool_kernel,
            round_mode pool_round_mode = round_mode::nearest)*/
         check_result(p, src, weight, bias, dst);
-
-       
+     
     }
 };
 /*
