@@ -257,6 +257,29 @@ public:
 
   void L(const char *label) { Xbyak::CodeGenerator::L(label); }
   void L(const Xbyak::Label &label) { Xbyak::CodeGenerator::L(label); }
+  void uni_vpxor(const Xbyak::Xmm &x1, const Xbyak::Xmm &x2,
+                   const Xbyak::Operand &op) {
+    assert(x1.getIdx() == x2.getIdx());
+    pxor(x2, op);
+  }
+  void uni_vpxor(const Xbyak::Ymm &x1, const Xbyak::Ymm &x2,
+                   const Xbyak::Operand &op) {
+    vpxor(x1, x2, op);
+  }
+  void uni_vpxor(const Xbyak::Zmm &x1, const Xbyak::Zmm &x2,
+                   const Xbyak::Operand &op) {
+    vpxord(x1, x2, op);
+  }
+
+  void uni_vmovdqu(const Xbyak::Address &addr, const Xbyak::Xmm &x) {
+    movdqu(addr, x);
+  }
+  void uni_vmovdqu(const Xbyak::Address &addr, const Xbyak::Ymm &x) {
+    vmovdqu(addr, x);
+  }
+  void uni_vmovdqu(const Xbyak::Address &addr, const Xbyak::Zmm &x) {
+    vmovdqu32(addr, x);
+  }
 
   void dump_code(const Xbyak::uint8 *code) const {
     if (code) {
